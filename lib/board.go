@@ -37,7 +37,7 @@ func (b *Board) GetTile(i, j int) TileColor {
 // Helper function which converts coordinates for us
 func coordToTileIdx(i, j int) int {
 	i = BOARD_HEIGHT - i - 1
-	return i * BOARD_WIDTH + j
+	return i*BOARD_WIDTH + j
 }
 
 // A helper for testing that a given tile color is in the valid range
@@ -52,4 +52,9 @@ func (b *Board) SetTile(t TileColor, i, j int) {
 	}
 
 	b.tiles[coordToTileIdx(i, j)] = t
+}
+
+// Clear completely resets the board with a new one that's empty
+func (b *Board) Clear() {
+	b.tiles = [BOARD_SIZE]TileColor{}
 }

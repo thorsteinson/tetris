@@ -49,3 +49,24 @@ func TestSetGetTile(t *testing.T) {
 		}
 	}
 }
+
+func TestClearBoard(t *testing.T) {
+	b := &Board{}
+
+	// Set every tile to a value
+	for i := 0; i < BOARD_HEIGHT; i++ {
+		for j := 0; j < BOARD_WIDTH; j++ {
+			b.SetTile(C1, i, j)
+		}
+	}
+
+	b.Clear()
+
+	for i := 0; i < BOARD_HEIGHT; i++ {
+		for j := 0; j < BOARD_WIDTH; j++ {
+			if b.GetTile(i, j) != EMPTY {
+				t.Errorf("Value not cleared at position: (%v, %v)", i, j)
+			}
+		}
+	}
+}
