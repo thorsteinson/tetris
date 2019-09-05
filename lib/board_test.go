@@ -50,15 +50,19 @@ func TestSetGetTile(t *testing.T) {
 	}
 }
 
+// Fills the board with the provided tile color
+func fill(b *Board, t TileColor) {
+	for i := 0; i < BOARD_HEIGHT; i++ {
+		for j := 0; j < BOARD_WIDTH; j++ {
+			b.SetTile(t, i, j)
+		}
+	}
+}
+
 func TestClearBoard(t *testing.T) {
 	b := &Board{}
 
-	// Set every tile to a value
-	for i := 0; i < BOARD_HEIGHT; i++ {
-		for j := 0; j < BOARD_WIDTH; j++ {
-			b.SetTile(C1, i, j)
-		}
-	}
+	fill(b, C1)
 
 	b.Clear()
 
@@ -67,6 +71,22 @@ func TestClearBoard(t *testing.T) {
 			if b.GetTile(i, j) != EMPTY {
 				t.Errorf("Value not cleared at position: (%v, %v)", i, j)
 			}
+		}
+	}
+}
+
+func TestEraseLine(t *testing.T) {
+	b := &Board{}
+
+	fill(b, C1)
+
+	i := 3
+
+	b.EraseLine(i)
+
+	for j := 0; j < BOARD_WIDTH; j++ {
+		if b.GetTile(i, j) != EMPTY {
+			t.Error("Non empty value found in erased line")
 		}
 	}
 }

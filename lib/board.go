@@ -58,3 +58,10 @@ func (b *Board) SetTile(t TileColor, i, j int) {
 func (b *Board) Clear() {
 	b.tiles = [BOARD_SIZE]TileColor{}
 }
+
+// EraseLine clears the provided line and sets it back to empty
+func (b *Board) EraseLine(i int) {
+	for j := 0; j < BOARD_WIDTH; j++ {
+		b.SetTile(EMPTY, i, j)
+	}
+}
