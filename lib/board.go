@@ -65,3 +65,23 @@ func (b *Board) EraseLine(i int) {
 		b.SetTile(EMPTY, i, j)
 	}
 }
+
+func (b *Board) FullLines() []int {
+	lines := []int{}
+
+	for i := 0; i < BOARD_HEIGHT; i++ {
+		var isEmpty bool
+		for j := 0; j < BOARD_WIDTH; j++ {
+			if b.GetTile(i, j) == EMPTY {
+				isEmpty = true
+			}
+
+		}
+
+		if !isEmpty {
+			lines = append(lines, i)
+		}
+	}
+
+	return lines
+}

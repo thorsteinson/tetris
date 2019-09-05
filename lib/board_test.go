@@ -90,3 +90,25 @@ func TestEraseLine(t *testing.T) {
 		}
 	}
 }
+
+func TestFullLines(t *testing.T) {
+	b := &Board{}
+
+	fill(b, C1)
+
+	if len(b.FullLines()) != BOARD_HEIGHT {
+		t.Error("Not all lines detected in totally filled board")
+	}
+
+	n := 10
+	b.EraseLine(n)
+
+	fullLines := b.FullLines()
+
+	// Every line EXCEPT 10 should now be full
+	for _, lineIdx := range fullLines {
+		if lineIdx == n {
+			t.Error("Erased line detected as a full line")
+		}
+	}
+}
