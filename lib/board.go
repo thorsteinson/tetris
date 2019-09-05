@@ -31,6 +31,25 @@ type Board struct {
 // GetTile returns the index of the provided tile. The bottom left
 // point is considered 0,0
 func (b *Board) GetTile(i, j int) TileColor {
-	i = BOARD_HEIGHT - i - 1 // Reverse notion of up and down
-	return b.tiles[i*BOARD_WIDTH+j]
+	return b.tiles[coordToTileIdx(i, j)]
+}
+
+// Helper function which converts coordinates for us
+func coordToTileIdx(i, j int) int {
+	i = BOARD_HEIGHT - i - 1
+	return i * BOARD_WIDTH + j
+}
+
+// A helper for testing that a given tile color is in the valid range
+// of values we've set
+func invalidTile(t TileColor) bool {
+	return t > C7 || t < EMPTY
+}
+
+func (b *Board) SetTile(t TileColor, i, j int) {
+	if invalidTile(t) {
+		panic("Invalid tile value passed")
+	}
+
+	b.tiles[coordToTileIdx(i, j)] = t
 }
