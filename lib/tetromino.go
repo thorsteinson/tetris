@@ -141,7 +141,7 @@ func init() {
 		rotationSet = append(rotationSet, &rotation)
 
 		for i := 0; i < 3; i++ {
-			rotation = pivot(rotation, grid.size)
+			rotation := pivot(rotation, grid.size)
 			rotationSet = append(rotationSet, &rotation)
 		}
 
