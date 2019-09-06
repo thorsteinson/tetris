@@ -54,11 +54,11 @@ func (tet ActiveTetromino) GetPos() (int, int) {
 }
 
 // Returns a list of positions for use in a board, where the tiles appear
-func (tet ActiveTetromino) ListCoords() []Position {
+func (tet ActiveTetromino) ListPositions() []Position {
 	x := tet.x
 	y := tet.y
 
-	coords := []Position{}
+	ps := []Position{}
 	mask := tet.Tetromino.GetMask()
 
 	for dx := 0; dx < tet.size; dx++ {
@@ -66,12 +66,12 @@ func (tet ActiveTetromino) ListCoords() []Position {
 			if mask[dx*tet.size+dy] {
 				// dy is inverted because we're counting from the top,
 				// but our grid is based in the reverse direction
-				coords = append(coords, Position{x + dx, y - dy})
+				ps = append(ps, Position{x + dx, y - dy})
 			}
 		}
 	}
 
-	return coords
+	return ps
 }
 
 type Game struct {

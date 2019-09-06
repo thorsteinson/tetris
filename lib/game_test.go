@@ -26,7 +26,7 @@ func TestActiveTetrominoMove(t *testing.T) {
 	}
 }
 
-func TestListCoodinates(t *testing.T) {
+func TestListPositions(t *testing.T) {
 	type testCase struct {
 		expPositions []Position
 		shape        Shape
@@ -46,7 +46,7 @@ func TestListCoodinates(t *testing.T) {
 
 	var expectedSet map[Position]bool
 	var tet ActiveTetromino
-	var foundCoords []Position
+	var foundPositions []Position
 
 	for _, test := range cases {
 		// Create the expected set
@@ -56,17 +56,17 @@ func TestListCoodinates(t *testing.T) {
 		}
 
 		tet = NewActiveTet(NewTet(test.shape))
-		foundCoords = tet.ListCoords()
+		foundPositions = tet.ListPositions()
 
-		t.Logf("Expected coords for shape %v: %v", test.shape, test.expPositions)
+		t.Logf("Expected Positions for shape %v: %v", test.shape, test.expPositions)
 
-		if len(foundCoords) != len(expectedSet) {
-			t.Errorf("Number of found coordinates is not 4.")
+		if len(foundPositions) != len(expectedSet) {
+			t.Errorf("Number of found positions is not 4.")
 		}
 
-		for _, coord := range foundCoords {
-			if !expectedSet[coord] {
-				t.Errorf("Unexpected position: %v", coord)
+		for _, pos := range foundPositions {
+			if !expectedSet[pos] {
+				t.Errorf("Unexpected position: %v", pos)
 			}
 		}
 	}
