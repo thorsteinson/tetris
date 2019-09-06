@@ -74,6 +74,25 @@ func (tet ActiveTetromino) ListPositions() []Position {
 	return ps
 }
 
+// Returns true if the tetromino can be moved in the given direction
+// without intersecting any tiles in the board, and within the
+// boundaries of the board
+func (tet ActiveTetromino) CanMove(dir Direction, board *Board) bool {
+	projectedPos := tet.Move(dir).ListPositions()
+
+	for _, p := range projectedPos {
+		if p.x < 0 ||
+			p.x >= BOARD_WIDTH ||
+			p.y < 0 ||
+			p.y >= BOARD_HEIGHT ||
+			!board.IsEmpty(p.x, p.y) {
+			return false
+		}
+	}
+
+	return true
+}
+
 type Game struct {
 	// Keeps track of number of lines that have been cleared
 	lines int

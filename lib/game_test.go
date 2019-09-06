@@ -98,3 +98,102 @@ func TestListPositions(t *testing.T) {
 		}
 	}
 }
+
+func TestCanMove(t *testing.T) {
+	type testCase struct {
+		// Seed the board with these positions
+		boardPositions []Position
+		dir            Direction // Direction to attempt to move
+		tetPos         Position  // Position of the active tet to start from
+		shape          Shape     // The shape of the tetromino
+		expected       bool      // Whether this move should be allowed
+		name           string    // Name of the test
+	}
+
+	tests := []testCase{
+		{
+			boardPositions: []Position{},
+			dir: UP,
+			tetPos: Position{-100, 0},
+			shape: TET_LINE,
+			expected: false,
+			name: "Below X Range",
+		},
+		{
+			boardPositions: []Position{},
+			dir: UP,
+			tetPos: Position{-100, 0},
+			shape: TET_LINE,
+			expected: false,
+			name: "Above X Range",
+		},
+		{
+			boardPositions: []Position{},
+			dir: UP,
+			tetPos: Position{0, 100},
+			shape: TET_LINE,
+			expected: false,
+			name: "Above Y Range",
+		},
+		{
+			boardPositions: []Position{},
+			dir: UP,
+			tetPos: Position{0, -100},
+			shape: TET_LINE,
+			expected: false,
+			name: "Below Y Range",
+		},
+		{
+			boardPositions: []Position{{4,4}, {5,4}, {6,4}, {7,4}},
+			dir: UP,
+			tetPos: Position{3, 8},
+			shape: TET_LINE,
+			expected: true,
+			name: "Above a horizontal line",
+		},
+		{
+			boardPositions: []Position{{4,4}, {5,4}, {6,4}, {7,4}},
+			dir: LEFT,
+			tetPos: Position{3, 8},
+			shape: TET_LINE,
+			expected: true,
+			name: "Left of a horizontal line",
+		},
+		{
+			boardPositions: []Position{{4,4}, {5,4}, {6,4}, {7,4}},
+			dir: RIGHT,
+			tetPos: Position{3, 8},
+			shape: TET_LINE,
+			expected: true,
+			name: "Right of a horizontal line",
+		},
+		{
+			boardPositions: []Position{{4,4}, {5,4}, {6,4}, {7,4}},
+			dir: DOWN,
+			tetPos: Position{3, 8},
+			shape: TET_LINE,
+			expected: false,
+			name: "Intersecting a horizontal line",
+		},
+	}
+
+	var board *Board = &Board{}
+	var tet ActiveTetromino
+	for _, test := range tests {
+		for _, p := range test.boardPositions {
+			board.SetTile(C1, p.x, p.y)
+		}
+
+		// Create tetronimo and alter position
+		tet = NewActiveTet(NewTet(test.shape))
+		tet.x = test.tetPos.x
+		tet.y = test.tetPos.y
+
+		if tet.CanMove(test.dir, board) != test.expected {
+			t.Errorf("Failed test: %v", test.name)
+		}
+
+		// Reset the board for the next test
+		board.Clear()
+	}
+}
