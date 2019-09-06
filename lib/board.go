@@ -85,3 +85,7 @@ func (b *Board) FullLines() []int {
 
 	return lines
 }
+
+func (b *Board) IsEmpty(i, j int) bool {
+	return b.GetTile(i, j) == EMPTY
+}

@@ -112,3 +112,18 @@ func TestFullLines(t *testing.T) {
 		}
 	}
 }
+
+func TestIsEmpty(t *testing.T) {
+	b := &Board{}
+
+
+	if !b.IsEmpty(0, 0) {
+		t.Error("Position should be empty initially")
+	}
+
+	b.SetTile(1, 0, 0)
+
+	if b.IsEmpty(0, 0) {
+		t.Error("Position is not empty after setting")
+	}
+}
