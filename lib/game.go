@@ -61,9 +61,9 @@ func (tet ActiveTetromino) ListPositions() []Position {
 	ps := []Position{}
 	mask := tet.Tetromino.GetMask()
 
-	for dx := 0; dx < tet.size; dx++ {
-		for dy := 0; dy < tet.size; dy++ {
-			if mask[dx*tet.size+dy] {
+	for dy := 0; dy < tet.size; dy++ {
+		for dx := 0; dx < tet.size; dx++ {
+			if mask[dy*tet.size+dx] {
 				// dy is inverted because we're counting from the top,
 				// but our grid is based in the reverse direction
 				ps = append(ps, Position{x + dx, y - dy})

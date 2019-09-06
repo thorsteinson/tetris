@@ -35,7 +35,34 @@ func TestListPositions(t *testing.T) {
 	cases := []testCase{
 		testCase{
 			expPositions: []Position{
-				Position{STARTING_X + 1, STARTING_Y},
+				Position{STARTING_X + 0, STARTING_Y + 0},
+				Position{STARTING_X + 0, STARTING_Y - 1},
+				Position{STARTING_X + 1, STARTING_Y + 0},
+				Position{STARTING_X + 1, STARTING_Y - 1},
+			},
+			shape: TET_SQUARE,
+		},
+		testCase{
+			expPositions: []Position{
+				Position{STARTING_X + 0, STARTING_Y - 2},
+				Position{STARTING_X + 1, STARTING_Y - 2},
+				Position{STARTING_X + 1, STARTING_Y - 1},
+				Position{STARTING_X + 2, STARTING_Y - 1},
+			},
+			shape: TET_S,
+		},
+		testCase{
+			expPositions: []Position{
+				Position{STARTING_X + 0, STARTING_Y - 1},
+				Position{STARTING_X + 1, STARTING_Y - 1},
+				Position{STARTING_X + 1, STARTING_Y - 2},
+				Position{STARTING_X + 2, STARTING_Y - 2},
+			},
+			shape: TET_Z,
+		},
+		testCase{
+			expPositions: []Position{
+				Position{STARTING_X + 1, STARTING_Y + 0},
 				Position{STARTING_X + 1, STARTING_Y - 1},
 				Position{STARTING_X + 1, STARTING_Y - 2},
 				Position{STARTING_X + 1, STARTING_Y - 3},
