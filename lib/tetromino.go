@@ -203,6 +203,24 @@ func (tet *Tetromino) GetMask() []bool {
 	return mask
 }
 
+// Returns the mask that results from a left rotation
+func (tet *Tetromino) GetLeftRotationMask() []bool {
+	mask := make([]bool, len(*tet.mask))
+	copy(mask, *rotations[tet.shape][tet.rotationIdx+1%4])
+	return mask
+}
+
+// Returns the mask that results from a right rotation
+func (tet *Tetromino) GetRightRotationMask() []bool {
+	mask := make([]bool, len(*tet.mask))
+	i := tet.rotationIdx - 1
+	if i < 0 {
+		i = 3
+	}
+	copy(mask, *rotations[tet.shape][i])
+	return mask
+}
+
 // Creates a read only channel that sends random shapes. We
 // paramaterize this with a seed
 func ShapeGenerator(seed int64) <-chan Shape {

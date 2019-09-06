@@ -31,6 +31,18 @@ func TestTetRotation(t *testing.T) {
 		if !reflect.DeepEqual(initMask, tet.GetMask()) {
 			t.Errorf("Shape %v is not same after consecutive right rotations", s)
 		}
+
+		leftMask := tet.GetLeftRotationMask()
+		tet.RotLeft()
+		if !reflect.DeepEqual(tet.GetMask(), leftMask) {
+			t.Errorf("Sahpe %v has different expected mask versus actual mask", s)
+		}
+
+		rightMask := tet.GetRightRotationMask()
+		tet.RotRight()
+		if !reflect.DeepEqual(tet.GetMask(), rightMask) {
+			t.Errorf("Sahpe %v has different expected mask versus actual mask", s)
+		}
 	}
 }
 
