@@ -27,30 +27,47 @@ func TestActiveTetrominoMove(t *testing.T) {
 }
 
 func TestListCoodinates(t *testing.T) {
-	tet := NewActiveTet(NewTet(TET_LINE))
-
-	// The line piece is offset by 1 in it's grid, and is resting
-	// vertically.
-
-	expectedSet := map[Position]bool{
-		Position{STARTING_X + 1, STARTING_Y}:     true,
-		Position{STARTING_X + 1, STARTING_Y - 1}: true,
-		Position{STARTING_X + 1, STARTING_Y - 2}: true,
-		Position{STARTING_X + 1, STARTING_Y - 3}: true,
-	}
-	foundSet := make(map[Position]bool)
-
-	coords := tet.ListCoords()
-
-	t.Logf("Following coordinates were listed: %v", coords)
-
-	for _, c := range coords {
-		foundSet[c] = true
+	type testCase struct {
+		expPositions []Position
+		shape        Shape
 	}
 
-	for expected := range expectedSet {
-		if !foundSet[expected] {
-			t.Errorf("Expected %v, but it wasn't found", expected)
+	cases := []testCase{
+		testCase{
+			expPositions: []Position{
+				Position{STARTING_X + 1, STARTING_Y},
+				Position{STARTING_X + 1, STARTING_Y - 1},
+				Position{STARTING_X + 1, STARTING_Y - 2},
+				Position{STARTING_X + 1, STARTING_Y - 3},
+			},
+			shape: TET_LINE,
+		},
+	}
+
+	var expectedSet map[Position]bool
+	var tet ActiveTetromino
+	var foundCoords []Position
+
+	for _, test := range cases {
+		// Create the expected set
+		expectedSet = make(map[Position]bool)
+		for _, p := range test.expPositions {
+			expectedSet[p] = true
+		}
+
+		tet = NewActiveTet(NewTet(test.shape))
+		foundCoords = tet.ListCoords()
+
+		t.Logf("Expected coords for shape %v: %v", test.shape, test.expPositions)
+
+		if len(foundCoords) != len(expectedSet) {
+			t.Errorf("Number of found coordinates is not 4.")
+		}
+
+		for _, coord := range foundCoords {
+			if !expectedSet[coord] {
+				t.Errorf("Unexpected position: %v", coord)
+			}
 		}
 	}
 }
