@@ -216,11 +216,9 @@ func TestBoardControllerNextTet(t *testing.T) {
 
 	ctl := NewBoardController(board, source)
 
-	ctl.NextTet()
-
-	// Check that the active tet has a squar shape
-	if ctl.tet.shape != TET_SQUARE {
-		t.Error("Tetromino has non square shape")
+	// Check that the active tet has a line shape
+	if ctl.tet.shape != TET_LINE {
+		t.Error("Tetromino has non line shape")
 	}
 
 	// Check that none of the tiles are empty, they should have some value
@@ -237,6 +235,22 @@ func TestBoardControllerNextTet(t *testing.T) {
 		if tc := ctl.board.GetTile(p.x, p.y); tc != expectedTC {
 			t.Errorf("Incorrect TileColor: expected %v, found %v", expectedTC, tc)
 		}
+	}
+
+	// Now slam the tet to the bottom, and get the next one
+	ctl.Slam()
+	ctl.NextTet()
+
+	// Check that there are now a total of 8 tiles in the board
+	var tileCount int
+	for _, tc := range ctl.board.tiles {
+		if tc != EMPTY {
+			tileCount++
+		}
+	}
+
+	if tileCount != 8 {
+		t.Error("Unexpected number of tiles found")
 	}
 }
 

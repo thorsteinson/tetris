@@ -114,7 +114,8 @@ func NewBoardController(board *Board, source <-chan *Tetromino) *BoardController
 }
 
 // Recieves next tetromino from channel, and changes the active
-// tetromino to the next one received.
+// tetromino to the next one received. This implicitly locks the tiles
+// of whatever the previous tetromino was.
 func (ctl *BoardController) NextTet() {
 	// NewActiveTet will handle setting the default position
 	ctl.tet = NewActiveTet(<-ctl.tetSource)
