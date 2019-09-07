@@ -93,6 +93,56 @@ func (tet ActiveTetromino) CanMove(dir Direction, board *Board) bool {
 	return true
 }
 
+// A BoardController is an entity that manages the state of a board
+// and an active tetromino. It moves the tetromino around with respect
+// to the board, and can glue the tetromino to the board as one would
+// expect with tetris.
+type BoardController struct {
+	board     *Board
+	tet       ActiveTetromino
+	tetSource <-chan *Tetromino
+}
+
+func NewBoardController(board *Board, source <-chan *Tetromino) *BoardController {
+	ctl := &BoardController{
+		board:     board,
+		tetSource: source,
+	}
+	ctl.NextTet()
+
+	return ctl
+}
+
+// Recieves next tetromino from channel, and changes the active
+// tetromino to the next one received.
+func (ctl *BoardController) NextTet() {
+	// NewActiveTet will handle setting the default position
+	ctl.tet = NewActiveTet(<-ctl.tetSource)
+
+	// Set new tiles
+	for _, p := range ctl.tet.ListPositions() {
+		ctl.board.SetTile(ShapeToTC(ctl.tet.shape), p.x, p.y)
+	}
+}
+
+// Move will idempotently move the active tetris piece. If it can't be
+// moved, then it won't be moved.
+func (ctl *BoardController) Move(dir Direction) {
+	if ctl.tet.CanMove(dir, ctl.board) {
+		// Erase tiles from board
+		for _, p := range ctl.tet.ListPositions() {
+			ctl.board.SetTile(EMPTY, p.x, p.y)
+		}
+
+		ctl.tet = ctl.tet.Move(dir)
+
+		// Set the new tiles
+		for _, p := range ctl.tet.ListPositions() {
+			ctl.board.SetTile(TileColor(ctl.tet.shape), p.x, p.y)
+		}
+	}
+}
+
 type Game struct {
 	// Keeps track of number of lines that have been cleared
 	lines int

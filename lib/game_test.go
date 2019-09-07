@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"math/rand"
 	"testing"
 )
 
@@ -113,67 +114,75 @@ func TestCanMove(t *testing.T) {
 	tests := []testCase{
 		{
 			boardPositions: []Position{},
-			dir: UP,
-			tetPos: Position{-100, 0},
-			shape: TET_LINE,
-			expected: false,
-			name: "Below X Range",
+			dir:            UP,
+			tetPos:         Position{-100, 0},
+			shape:          TET_LINE,
+			expected:       false,
+			name:           "Below X Range",
 		},
 		{
 			boardPositions: []Position{},
-			dir: UP,
-			tetPos: Position{-100, 0},
-			shape: TET_LINE,
-			expected: false,
-			name: "Above X Range",
+			dir:            UP,
+			tetPos:         Position{-100, 0},
+			shape:          TET_LINE,
+			expected:       false,
+			name:           "Above X Range",
 		},
 		{
 			boardPositions: []Position{},
-			dir: UP,
-			tetPos: Position{0, 100},
-			shape: TET_LINE,
-			expected: false,
-			name: "Above Y Range",
+			dir:            UP,
+			tetPos:         Position{0, 100},
+			shape:          TET_LINE,
+			expected:       false,
+			name:           "Above Y Range",
 		},
 		{
 			boardPositions: []Position{},
-			dir: UP,
-			tetPos: Position{0, -100},
-			shape: TET_LINE,
-			expected: false,
-			name: "Below Y Range",
+			dir:            UP,
+			tetPos:         Position{0, -100},
+			shape:          TET_LINE,
+			expected:       false,
+			name:           "Below Y Range",
 		},
 		{
-			boardPositions: []Position{{4,4}, {5,4}, {6,4}, {7,4}},
-			dir: UP,
-			tetPos: Position{3, 8},
-			shape: TET_LINE,
-			expected: true,
-			name: "Above a horizontal line",
+			boardPositions: []Position{{4, 4}, {5, 4}, {6, 4}, {7, 4}},
+			dir:            UP,
+			tetPos:         Position{3, 8},
+			shape:          TET_LINE,
+			expected:       true,
+			name:           "Above a horizontal line",
 		},
 		{
-			boardPositions: []Position{{4,4}, {5,4}, {6,4}, {7,4}},
-			dir: LEFT,
-			tetPos: Position{3, 8},
-			shape: TET_LINE,
-			expected: true,
-			name: "Left of a horizontal line",
+			boardPositions: []Position{{4, 4}, {5, 4}, {6, 4}, {7, 4}},
+			dir:            LEFT,
+			tetPos:         Position{3, 8},
+			shape:          TET_LINE,
+			expected:       true,
+			name:           "Left of a horizontal line",
 		},
 		{
-			boardPositions: []Position{{4,4}, {5,4}, {6,4}, {7,4}},
-			dir: RIGHT,
-			tetPos: Position{3, 8},
-			shape: TET_LINE,
-			expected: true,
-			name: "Right of a horizontal line",
+			boardPositions: []Position{{4, 4}, {5, 4}, {6, 4}, {7, 4}},
+			dir:            RIGHT,
+			tetPos:         Position{3, 8},
+			shape:          TET_LINE,
+			expected:       true,
+			name:           "Right of a horizontal line",
 		},
 		{
-			boardPositions: []Position{{4,4}, {5,4}, {6,4}, {7,4}},
-			dir: DOWN,
-			tetPos: Position{3, 8},
-			shape: TET_LINE,
-			expected: false,
-			name: "Intersecting a horizontal line",
+			boardPositions: []Position{{4, 4}, {5, 4}, {6, 4}, {7, 4}},
+			dir:            DOWN,
+			tetPos:         Position{3, 8},
+			shape:          TET_LINE,
+			expected:       false,
+			name:           "Intersecting a horizontal line",
+		},
+		{
+			boardPositions: []Position{},
+			dir:            DOWN,
+			tetPos:         Position{0, 3},
+			shape:          TET_LINE,
+			expected:       false,
+			name:           "Going under the board",
 		},
 	}
 
@@ -195,5 +204,76 @@ func TestCanMove(t *testing.T) {
 
 		// Reset the board for the next test
 		board.Clear()
+	}
+}
+
+func TestBoardControllerNextTet(t *testing.T) {
+	board := &Board{}
+
+	source := make(chan *Tetromino, 10)
+	source <- NewTet(TET_LINE)
+	source <- NewTet(TET_SQUARE)
+
+	ctl := NewBoardController(board, source)
+
+	ctl.NextTet()
+
+	// Check that the active tet has a squar shape
+	if ctl.tet.shape != TET_SQUARE {
+		t.Error("Tetromino has non square shape")
+	}
+
+	// Check that none of the tiles are empty, they should have some value
+	for _, p := range ctl.tet.ListPositions() {
+		if ctl.board.IsEmpty(p.x, p.y) {
+			t.Errorf("Unexpected empty tile: %v", p)
+		}
+	}
+
+	// Look at the positions of the tetromino and compare that to the
+	// board. If these aren't set, we've got a problem
+	expectedTC := ShapeToTC(ctl.tet.shape)
+	for _, p := range ctl.tet.ListPositions() {
+		if tc := ctl.board.GetTile(p.x, p.y); tc != expectedTC {
+			t.Errorf("Incorrect TileColor: expected %v, found %v", expectedTC, tc)
+		}
+	}
+}
+
+func TestBoardControllerMove(t *testing.T) {
+	const TRIALS = 20
+	const MOVEMENTS = 100
+
+	trial := func() bool {
+		board := &Board{}
+
+		source := make(chan *Tetromino, 10)
+		source <- NewTet(TET_LINE)
+
+		ctl := NewBoardController(board, source)
+
+		// Move randomly 100 times. If our movement code is safe, then it
+		// should end up just fine without crashing. It's also highly
+		// likely it doesn't end up in the same spot it started
+		startingPos := ctl.tet.Position
+		var dir Direction
+		for i := 0; i < MOVEMENTS; i++ {
+			dir = Direction(rand.Intn(4))
+			ctl.Move(dir)
+		}
+
+		// Return if the starting and ending position are the SAME
+		return startingPos == ctl.tet.Position
+	}
+
+	var sameCount int
+	for i := 0; i < TRIALS; i++ {
+		if trial() {
+			sameCount++
+		}
+	}
+
+	if sameCount > 1 {
+		t.Errorf("After %v trials ended in same location %v times", TRIALS, sameCount)
 	}
 }

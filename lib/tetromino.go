@@ -221,6 +221,12 @@ func (tet *Tetromino) GetRightRotationMask() []bool {
 	return mask
 }
 
+func ShapeToTC(s Shape) TileColor {
+	// We need to shift by 1, since there's an EMPTY tile and no
+	// corresponding empty shape
+	return TileColor(s + 1)
+}
+
 // Creates a read only channel that sends random shapes. We
 // paramaterize this with a seed
 func ShapeGenerator(seed int64) <-chan Shape {
