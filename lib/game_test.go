@@ -288,8 +288,13 @@ func TestSlam(t *testing.T) {
 	tests := []testCase{
 		{
 			boardPositions: []Position{},
-			shape: TET_LINE,
-			expectedYMin: 0,
+			shape:          TET_LINE,
+			expectedYMin:   0,
+		},
+		{
+			boardPositions: []Position{{2, 3}, {3, 3}, {4, 3}, {5, 3}, {6, 3}, {7, 3}},
+			shape:          TET_LINE,
+			expectedYMin:   4,
 		},
 	}
 
@@ -300,7 +305,7 @@ func TestSlam(t *testing.T) {
 		source <- NewTet(test.shape)
 		ctl := NewBoardController(board, source)
 
-		for _,p := range test.boardPositions {
+		for _, p := range test.boardPositions {
 			ctl.board.SetTile(ShapeToTC(test.shape), p.x, p.y)
 		}
 
