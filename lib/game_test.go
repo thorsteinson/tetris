@@ -244,7 +244,9 @@ func TestBoardControllerMove(t *testing.T) {
 	const TRIALS = 20
 	const MOVEMENTS = 100
 
-	trial := func() bool {
+	endPositions := make(map[Position]bool)
+
+	trial := func() {
 		board := &Board{}
 
 		source := make(chan *Tetromino, 10)
@@ -255,7 +257,6 @@ func TestBoardControllerMove(t *testing.T) {
 		// Move randomly 100 times. If our movement code is safe, then it
 		// should end up just fine without crashing. It's also highly
 		// likely it doesn't end up in the same spot it started
-		startingPos := ctl.tet.Position
 		var dir Direction
 		for i := 0; i < MOVEMENTS; i++ {
 			dir = Direction(rand.Intn(4))
@@ -263,17 +264,16 @@ func TestBoardControllerMove(t *testing.T) {
 		}
 
 		// Return if the starting and ending position are the SAME
-		return startingPos == ctl.tet.Position
+		endPositions[ctl.tet.Position] = true
 	}
 
-	var sameCount int
 	for i := 0; i < TRIALS; i++ {
-		if trial() {
-			sameCount++
-		}
+		trial()
 	}
 
-	if sameCount > 1 {
-		t.Errorf("After %v trials ended in same location %v times", TRIALS, sameCount)
+	if len(endPositions) < 5 {
+		t.Errorf("After %v trials the tetromino ended up in %v unique locations. This is too low",
+			TRIALS,
+			len(endPositions))
 	}
 }
