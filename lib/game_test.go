@@ -277,3 +277,46 @@ func TestBoardControllerMove(t *testing.T) {
 			len(endPositions))
 	}
 }
+
+func TestSlam(t *testing.T) {
+	type testCase struct {
+		boardPositions []Position
+		shape          Shape
+		expectedYMin   int
+	}
+
+	tests := []testCase{
+		{
+			boardPositions: []Position{},
+			shape: TET_LINE,
+			expectedYMin: 0,
+		},
+	}
+
+	for _, test := range tests {
+		// Setup the board controller
+		board := &Board{}
+		source := make(chan *Tetromino, 10)
+		source <- NewTet(test.shape)
+		ctl := NewBoardController(board, source)
+
+		for _,p := range test.boardPositions {
+			ctl.board.SetTile(ShapeToTC(test.shape), p.x, p.y)
+		}
+
+		// Slam the tetromino
+		ctl.Slam()
+
+		// Check that the minimum y-height of the tile matches what we expect
+		var yMin = BOARD_HEIGHT - 1
+		for _, p := range ctl.tet.ListPositions() {
+			if p.y < yMin {
+				yMin = p.y
+			}
+		}
+
+		if yMin != test.expectedYMin {
+			t.Errorf("Expected Y-min %v, found %v", test.expectedYMin, yMin)
+		}
+	}
+}

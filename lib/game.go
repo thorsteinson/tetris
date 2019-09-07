@@ -143,6 +143,24 @@ func (ctl *BoardController) Move(dir Direction) {
 	}
 }
 
+// Slam will have a tetromino fall all the way to the bottom of the
+// board, or until it reaches something along it's path to the bottom.
+func (ctl *BoardController) Slam() {
+	for _, p := range ctl.tet.ListPositions() {
+		ctl.board.SetTile(EMPTY, p.x, p.y)
+	}
+
+	// Move as far down as possible
+	for ctl.tet.CanMove(DOWN, ctl.board) {
+		ctl.tet = ctl.tet.Move(DOWN)
+	}
+
+	// Set the tiles again
+	for _, p := range ctl.tet.ListPositions() {
+		ctl.board.SetTile(TileColor(ctl.tet.shape), p.x, p.y)
+	}
+}
+
 type Game struct {
 	// Keeps track of number of lines that have been cleared
 	lines int
