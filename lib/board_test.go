@@ -3,7 +3,6 @@ package lib
 import (
 	"math/rand"
 	"testing"
-	"time"
 )
 
 func TestGetTileEmptyBoard(t *testing.T) {
@@ -17,10 +16,10 @@ func TestGetTileEmptyBoard(t *testing.T) {
 
 	b := &Board{}
 
-	for i = 0; i < BOARD_HEIGHT; i++ {
-		for j = 0; j < BOARD_WIDTH; j++ {
+	for y := 0; y < BOARD_HEIGHT; y++ {
+		for x := 0; x < BOARD_WIDTH; x++ {
 			if b.GetTile(i, j) != EMPTY {
-				t.Errorf("GetTile returned non empty tile on new board at postion: (%v %v)", i, j)
+				t.Errorf("GetTile returned non empty tile on new board at postion: (%v %v)", x, y)
 			}
 		}
 	}
@@ -30,20 +29,17 @@ func TestGetTileEmptyBoard(t *testing.T) {
 // tile that was just set
 func TestSetGetTile(t *testing.T) {
 	b := &Board{}
-	seed := time.Now().UnixNano()
-	rand.Seed(seed)
-
-	t.Logf("Using seed: %v", seed)
 
 	tiles := []TileColor{EMPTY, C1, C2, C3, C4, C5, C6, C7}
 
 	var tile TileColor
-	for i := 0; i < BOARD_HEIGHT; i++ {
-		for j := 0; j < BOARD_WIDTH; j++ {
+	for y := 0; y < BOARD_HEIGHT; y++ {
+		for x := 0; x < BOARD_WIDTH; x++ {
 			// pick a random tile
 			tile = tiles[rand.Intn(len(tiles))]
-			b.SetTile(tile, i, j)
-			if found := b.GetTile(i, j); found != tile {
+			t.Logf("Testing position: (%v, %v)", x, y)
+			b.SetTile(tile, x, y)
+			if found := b.GetTile(x, y); found != tile {
 				t.Errorf("Tile was set to %v but retreived value was %v", tile, found)
 			}
 		}
@@ -52,9 +48,9 @@ func TestSetGetTile(t *testing.T) {
 
 // Fills the board with the provided tile color
 func fill(b *Board, t TileColor) {
-	for i := 0; i < BOARD_HEIGHT; i++ {
-		for j := 0; j < BOARD_WIDTH; j++ {
-			b.SetTile(t, i, j)
+	for y := 0; y < BOARD_HEIGHT; y++ {
+		for x := 0; x < BOARD_WIDTH; x++ {
+			b.SetTile(t, x, y)
 		}
 	}
 }
@@ -66,10 +62,10 @@ func TestClearBoard(t *testing.T) {
 
 	b.Clear()
 
-	for i := 0; i < BOARD_HEIGHT; i++ {
-		for j := 0; j < BOARD_WIDTH; j++ {
-			if b.GetTile(i, j) != EMPTY {
-				t.Errorf("Value not cleared at position: (%v, %v)", i, j)
+	for y := 0; y < BOARD_HEIGHT; y++ {
+		for x := 0; x < BOARD_WIDTH; x++ {
+			if b.GetTile(x, y) != EMPTY {
+				t.Errorf("Value not cleared at position: (%v, %v)", x, y)
 			}
 		}
 	}
@@ -80,12 +76,12 @@ func TestEraseLine(t *testing.T) {
 
 	fill(b, C1)
 
-	i := 3
+	y := 3
 
-	b.EraseLine(i)
+	b.EraseLine(y)
 
-	for j := 0; j < BOARD_WIDTH; j++ {
-		if b.GetTile(i, j) != EMPTY {
+	for x := 0; x < BOARD_WIDTH; x++ {
+		if b.GetTile(x, y) != EMPTY {
 			t.Error("Non empty value found in erased line")
 		}
 	}
