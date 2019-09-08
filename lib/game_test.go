@@ -213,8 +213,9 @@ func TestBoardControllerNextTet(t *testing.T) {
 	source := make(chan *Tetromino, 10)
 	source <- NewTet(TET_LINE)
 	source <- NewTet(TET_SQUARE)
+	counter := make(chan int, 10)
 
-	ctl := NewBoardController(board, source)
+	ctl := NewBoardController(board, source, counter)
 
 	// Check that the active tet has a line shape
 	if ctl.tet.shape != TET_LINE {
@@ -265,8 +266,9 @@ func TestBoardControllerMove(t *testing.T) {
 
 		source := make(chan *Tetromino, 10)
 		source <- NewTet(TET_LINE)
+		counter := make(chan int, 10)
 
-		ctl := NewBoardController(board, source)
+		ctl := NewBoardController(board, source, counter)
 
 		// Move randomly 100 times. If our movement code is safe, then it
 		// should end up just fine without crashing. It's also highly
@@ -317,7 +319,8 @@ func TestSlam(t *testing.T) {
 		board := &Board{}
 		source := make(chan *Tetromino, 10)
 		source <- NewTet(test.shape)
-		ctl := NewBoardController(board, source)
+		counter := make(chan int, 10)
+		ctl := NewBoardController(board, source, counter)
 
 		for _, p := range test.boardPositions {
 			ctl.board.SetTile(ShapeToTC(test.shape), p.x, p.y)
@@ -346,7 +349,8 @@ func TestNextTetTetris(t *testing.T) {
 	source := make(chan *Tetromino, 10)
 	source <- NewTet(TET_T)
 	source <- NewTet(TET_T)
-	ctl := NewBoardController(board, source)
+	counter := make(chan int, 10)
+	ctl := NewBoardController(board, source, counter)
 
 	// Set all but one tile in the bottom of a board to non empty
 	for x := 0; x < BOARD_WIDTH; x++ {

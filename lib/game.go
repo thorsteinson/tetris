@@ -98,15 +98,17 @@ func (tet ActiveTetromino) CanMove(dir Direction, board *Board) bool {
 // to the board, and can glue the tetromino to the board as one would
 // expect with tetris.
 type BoardController struct {
-	board     *Board
-	tet       ActiveTetromino
-	tetSource <-chan *Tetromino
+	board       *Board
+	tet         ActiveTetromino
+	tetSource   <-chan *Tetromino
+	lineCounter chan<- int
 }
 
-func NewBoardController(board *Board, source <-chan *Tetromino) *BoardController {
+func NewBoardController(board *Board, source <-chan *Tetromino, lines chan<- int) *BoardController {
 	ctl := &BoardController{
-		board:     board,
-		tetSource: source,
+		board:       board,
+		tetSource:   source,
+		lineCounter: lines,
 	}
 	ctl.NextTet()
 
@@ -118,8 +120,9 @@ func NewBoardController(board *Board, source <-chan *Tetromino) *BoardController
 // of whatever the previous tetromino was and alters the state of the
 // board by applying tetris
 func (ctl *BoardController) NextTet() {
-	// Apply the tetris if possible
-	ctl.board.Tetris()
+	if lines := ctl.board.Tetris(); lines > 0 {
+		ctl.lineCounter <- lines
+	}
 
 	// NewActiveTet will handle setting the default position
 	ctl.tet = NewActiveTet(<-ctl.tetSource)
