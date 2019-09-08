@@ -444,3 +444,44 @@ func TestBoardControllerRotation(t *testing.T) {
 		}
 	}
 }
+
+// Simulates a ton of random movements, just to ensure that nothing we
+// do could possibly end up with us out of bounds or breaking the game
+func TestRandomWalkStressTest(t *testing.T) {
+	// Setup
+	board := &Board{}
+	source := make(chan *Tetromino, 10)
+	for _, s := range shapes {
+		source <- NewTet(s)
+	}
+	// We need to queue up an extra shape, or we'll deadlock
+	source <- NewTet(TET_SQUARE)
+	counter := make(chan int, 10)
+	ctl := NewBoardController(board, source, counter)
+
+	const MOVEMENTS = 1000
+
+	var movement int
+	for _, s := range shapes {
+		t.Logf("Testing random walk stress test with shape: %v", s)
+
+		for i := 0; i < MOVEMENTS; i++ {
+			t.Logf("Movement %v of %v", i+1, MOVEMENTS)
+			movement = rand.Intn(6)
+			t.Logf("Next Movement: %v", movement)
+			if movement < 4 {
+				ctl.Move(Direction(movement))
+			} else if movement == 4 {
+				t.Logf("Current position: %v", ctl.tet.Position)
+				t.Log("Current tile positions")
+				t.Logf("%v", ctl.tet.ListPositions())
+				ctl.RotLeft()
+			} else {
+				ctl.RotRight()
+			}
+		}
+
+		ctl.Slam()
+		ctl.NextTet()
+	}
+}
