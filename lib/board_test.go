@@ -81,7 +81,13 @@ func TestTetris(t *testing.T) {
 	b.SetTile(EMPTY, 5, 6)
 	b.SetTile(EMPTY, 5, 7)
 
-	b.Tetris()
+	linesCleared := b.Tetris()
+	expLinesCleared := BOARD_HEIGHT - 3
+
+	if linesCleared != expLinesCleared {
+		t.Errorf("Incorrect number of lines cleared reported. Expected %v, found %v",
+			expLinesCleared, linesCleared)
+	}
 
 	// Only the first 3 lines should have values present
 	for y := 0; y < 3; y++ {

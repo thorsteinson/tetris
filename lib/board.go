@@ -68,7 +68,7 @@ func (b *Board) Clear() {
 
 // Tetris clears all full lines, and then shifts any tiles
 // above them down. This is should occur during a tetris
-func (b *Board) Tetris() {
+func (b *Board) Tetris() int {
 	lines := b.FullLines()
 	var y int
 	for i := len(lines) - 1; i >= 0; i-- {
@@ -92,6 +92,8 @@ func (b *Board) Tetris() {
 			b.SetTile(EMPTY, x, BOARD_HEIGHT-1)
 		}
 	}
+
+	return len(lines)
 }
 
 func (b *Board) FullLines() []int {
