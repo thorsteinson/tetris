@@ -151,177 +151,112 @@ func (ctl *BoardController) Move(dir Direction) {
 	}
 }
 
+// Core rotation
+func (ctl *BoardController) rotate(isLeft bool) {
+	var rotationFunc, rotationInverse func()
+
+	if isLeft {
+		rotationFunc = ctl.tet.RotLeft
+		rotationInverse = ctl.tet.RotRight
+	} else {
+		rotationFunc = ctl.tet.RotRight
+		rotationInverse = ctl.tet.RotLeft
+	}
+
+	for _, p := range ctl.tet.ListPositions() {
+		ctl.board.SetTile(EMPTY, p.x, p.y)
+	}
+
+	// Apply the rotation
+	rotationFunc()
+
+	// Consider all edge cases
+	// 1. Pushing to the left on the X-Axis
+	// 2. Pushing up on the Y-Axis
+	// 3. Pushing to the right on the X-Axis
+	// 4. Pushing down on th Y- axis
+	minX := 0
+	minY := 0
+	maxX := BOARD_WIDTH - 1
+	maxY := BOARD_HEIGHT - 1
+	for _, p := range ctl.tet.ListPositions() {
+		// Find minimum and maximum x and y values
+		if p.x > maxX {
+			maxX = p.x
+		} else if p.x < minX {
+			minX = p.x
+		}
+
+		if p.y < minY {
+			minY = p.y
+		} else if p.y > maxY {
+			maxY = p.y
+		}
+	}
+
+	// Shift in needed directions so it's in bounds, then check for
+	// any collisions
+	var deltaX, deltaY int
+	var yDir, xDir Direction
+
+	// The direction and delta we apply depends on which threshold
+	// was crossed.
+	if minX < 0 {
+		deltaX = 0 - minX
+		xDir = RIGHT
+	} else {
+		deltaX = maxX - (BOARD_WIDTH - 1)
+		xDir = LEFT
+	}
+
+	if minY < 0 {
+		deltaY = 0 - minY
+		yDir = UP
+	} else {
+		deltaY = maxY - (BOARD_HEIGHT - 1)
+		yDir = DOWN
+	}
+
+	projectedTet := ctl.tet
+	for i := 0; i < deltaX; i++ {
+		projectedTet = projectedTet.Move(xDir)
+	}
+	for i := 0; i < deltaY; i++ {
+		projectedTet = projectedTet.Move(yDir)
+	}
+
+	// Check for internal collisions
+	var colliding bool
+	for _, p := range projectedTet.ListPositions() {
+		if !ctl.board.IsEmpty(p.x, p.y) {
+			colliding = true
+			break
+		}
+	}
+
+	if colliding {
+		// Undo the rotation, the operation is idempotent
+		rotationInverse()
+	} else {
+		// Update the position of the tetromino
+		ctl.tet = projectedTet
+	}
+
+	for _, p := range ctl.tet.ListPositions() {
+		ctl.board.SetTile(ShapeToTC(ctl.tet.shape), p.x, p.y)
+	}
+
+}
+
 // Attempting to rotate left or right will rotate in place if
 // possible, and possibly shift the tetromino along the x-axis to make
 // it fit. So it will rotate AND possibly move the tetromino
 func (ctl *BoardController) RotLeft() {
-	for _, p := range ctl.tet.ListPositions() {
-		ctl.board.SetTile(EMPTY, p.x, p.y)
-	}
-
-	// Apply the rotation
-	ctl.tet.RotLeft()
-
-	// Consider all edge cases
-	// 1. Pushing to the left on the X-Axis
-	// 2. Pushing up on the Y-Axis
-	// 3. Pushing to the right on the X-Axis
-	// 4. Pushing down on th Y- axis
-	minX := 0
-	minY := 0
-	maxX := BOARD_WIDTH - 1
-	maxY := BOARD_HEIGHT - 1
-	for _, p := range ctl.tet.ListPositions() {
-		// Find minimum and maximum x and y values
-		if p.x > maxX {
-			maxX = p.x
-		} else if p.x < minX {
-			minX = p.x
-		}
-
-		if p.y < minY {
-			minY = p.y
-		} else if p.y > maxY {
-			maxY = p.y
-		}
-	}
-
-	// Shift in needed directions so it's in bounds, then check for
-	// any collisions
-	var deltaX, deltaY int
-	var yDir, xDir Direction
-
-	// The direction and delta we apply depends on which threshold
-	// was crossed.
-	if minX < 0 {
-		deltaX = 0 - minX
-		xDir = RIGHT
-	} else {
-		deltaX = maxX - (BOARD_WIDTH - 1)
-		xDir = LEFT
-	}
-
-	if minY < 0 {
-		deltaY = 0 - minY
-		yDir = UP
-	} else {
-		deltaY = maxY - (BOARD_HEIGHT - 1)
-		yDir = DOWN
-	}
-
-	projectedTet := ctl.tet
-	for i := 0; i < deltaX; i++ {
-		projectedTet = projectedTet.Move(xDir)
-	}
-	for i := 0; i < deltaY; i++ {
-		projectedTet = projectedTet.Move(yDir)
-	}
-
-	// Check for internal collisions
-	var colliding bool
-	for _, p := range projectedTet.ListPositions() {
-		if !ctl.board.IsEmpty(p.x, p.y) {
-			colliding = true
-			break
-		}
-	}
-
-	if colliding {
-		// Undo the rotation, the operation is idempotent
-		ctl.tet.RotRight()
-	} else {
-		// Update the position of the tetromino
-		ctl.tet = projectedTet
-	}
-
-	for _, p := range ctl.tet.ListPositions() {
-		ctl.board.SetTile(ShapeToTC(ctl.tet.shape), p.x, p.y)
-	}
+	ctl.rotate(true)
 }
 
 func (ctl *BoardController) RotRight() {
-	for _, p := range ctl.tet.ListPositions() {
-		ctl.board.SetTile(EMPTY, p.x, p.y)
-	}
-
-	// Apply the rotation
-	ctl.tet.RotRight()
-
-	// Consider all edge cases
-	// 1. Pushing to the left on the X-Axis
-	// 2. Pushing up on the Y-Axis
-	// 3. Pushing to the right on the X-Axis
-	// 4. Pushing down on th Y- axis
-	minX := 0
-	minY := 0
-	maxX := BOARD_WIDTH - 1
-	maxY := BOARD_HEIGHT - 1
-	for _, p := range ctl.tet.ListPositions() {
-		// Find minimum and maximum x and y values
-		if p.x > maxX {
-			maxX = p.x
-		} else if p.x < minX {
-			minX = p.x
-		}
-
-		if p.y < minY {
-			minY = p.y
-		} else if p.y > maxY {
-			maxY = p.y
-		}
-	}
-
-	// Shift in needed directions so it's in bounds, then check for
-	// any collisions
-	var deltaX, deltaY int
-	var yDir, xDir Direction
-
-	// The direction and delta we apply depends on which threshold
-	// was crossed.
-	if minX < 0 {
-		deltaX = 0 - minX
-		xDir = RIGHT
-	} else {
-		deltaX = maxX - (BOARD_WIDTH - 1)
-		xDir = LEFT
-	}
-
-	if minY < 0 {
-		deltaY = 0 - minY
-		yDir = UP
-	} else {
-		deltaY = maxY - (BOARD_HEIGHT - 1)
-		yDir = DOWN
-	}
-
-	projectedTet := ctl.tet
-	for i := 0; i < deltaX; i++ {
-		projectedTet = projectedTet.Move(xDir)
-	}
-	for i := 0; i < deltaY; i++ {
-		projectedTet = projectedTet.Move(yDir)
-	}
-
-	// Check for internal collisions
-	var colliding bool
-	for _, p := range projectedTet.ListPositions() {
-		if !ctl.board.IsEmpty(p.x, p.y) {
-			colliding = true
-			break
-		}
-	}
-
-	if colliding {
-		// Undo the rotation, the operation is idempotent
-		ctl.tet.RotLeft()
-	} else {
-		// Update the position of the tetromino
-		ctl.tet = projectedTet
-	}
-
-	for _, p := range ctl.tet.ListPositions() {
-		ctl.board.SetTile(ShapeToTC(ctl.tet.shape), p.x, p.y)
-	}
+	ctl.rotate(false)
 }
 
 // Slam will have a tetromino fall all the way to the bottom of the
