@@ -34,7 +34,7 @@ func (b *Board) GetTile(x, y int) TileColor {
 	if x < 0 || x >= BOARD_WIDTH {
 		panic("Tile outside of board width")
 	}
-	if  y < 0 || y >= BOARD_HEIGHT {
+	if y < 0 || y >= BOARD_HEIGHT {
 		panic("Tile outside of board height")
 	}
 
@@ -66,10 +66,31 @@ func (b *Board) Clear() {
 	b.tiles = [BOARD_SIZE]TileColor{}
 }
 
-// EraseLine clears the provided line and sets it back to empty
-func (b *Board) EraseLine(y int) {
-	for x := 0; x< BOARD_WIDTH; x++ {
-		b.SetTile(EMPTY, x, y)
+// Tetris clears all full lines, and then shifts any tiles
+// above them down. This is should occur during a tetris
+func (b *Board) Tetris() {
+	lines := b.FullLines()
+	var y int
+	for i := len(lines) - 1; i >= 0; i-- {
+		// Iterate through lines in reverse order, from TOP to
+		// BOTTOM.
+		y = lines[i]
+		// Erase the tiles in the line.
+		for x := 0; x < BOARD_WIDTH; x++ {
+			b.SetTile(EMPTY, x, y)
+		}
+
+		// Shift every tile above the line down by 1
+		for n := y; n < BOARD_HEIGHT-1; n++ {
+			for x := 0; x < BOARD_WIDTH; x++ {
+				b.SetTile(b.GetTile(x, n+1), x, n)
+			}
+		}
+
+		// Finally erase the top line, since it should now be empty
+		for x := 0; x < BOARD_WIDTH; x++ {
+			b.SetTile(EMPTY, x, BOARD_HEIGHT-1)
+		}
 	}
 }
 
@@ -79,7 +100,7 @@ func (b *Board) FullLines() []int {
 	for y := 0; y < BOARD_HEIGHT; y++ {
 		var isEmpty bool
 		for x := 0; x < BOARD_WIDTH; x++ {
-			if b.GetTile(x, y) == EMPTY {
+			if b.IsEmpty(x, y) {
 				isEmpty = true
 			}
 		}

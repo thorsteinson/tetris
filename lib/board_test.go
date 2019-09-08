@@ -71,18 +71,43 @@ func TestClearBoard(t *testing.T) {
 	}
 }
 
-func TestEraseLine(t *testing.T) {
+func TestTetris(t *testing.T) {
 	b := &Board{}
 
+	// Sets teh board so that it's totally full, with just a few holes
+	// that create a vertical line
 	fill(b, C1)
+	b.SetTile(EMPTY, 5, 5)
+	b.SetTile(EMPTY, 5, 6)
+	b.SetTile(EMPTY, 5, 7)
 
-	y := 3
+	b.Tetris()
 
-	b.EraseLine(y)
+	// Only the first 3 lines should have values present
+	for y := 0; y < 3; y++ {
+		var lineHasValue bool
+		for x := 0; x < BOARD_WIDTH; x++ {
+			if !b.IsEmpty(x, y) {
+				lineHasValue = true
+			}
+		}
 
-	for x := 0; x < BOARD_WIDTH; x++ {
-		if b.GetTile(x, y) != EMPTY {
-			t.Error("Non empty value found in erased line")
+		if !lineHasValue {
+			t.Error("One of the first 3 lines has no values present")
+		}
+	}
+
+	// Ensure that all lines above 2 are totally empty due to tetris
+	for y := 3; y < BOARD_HEIGHT; y++ {
+		var lineNonEmpty bool
+		for x := 0; x < BOARD_WIDTH; x++ {
+			if !b.IsEmpty(x, y) {
+				lineNonEmpty = true
+			}
+		}
+
+		if lineNonEmpty {
+			t.Errorf("Expected line to be empty but found value at line: %v", y)
 		}
 	}
 }
@@ -97,7 +122,9 @@ func TestFullLines(t *testing.T) {
 	}
 
 	n := 10
-	b.EraseLine(n)
+	for x := 0; x < BOARD_WIDTH; x++ {
+		b.SetTile(EMPTY, x, n)
+	}
 
 	fullLines := b.FullLines()
 
@@ -111,7 +138,6 @@ func TestFullLines(t *testing.T) {
 
 func TestIsEmpty(t *testing.T) {
 	b := &Board{}
-
 
 	if !b.IsEmpty(0, 0) {
 		t.Error("Position should be empty initially")
