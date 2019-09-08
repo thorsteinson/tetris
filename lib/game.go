@@ -151,6 +151,115 @@ func (ctl *BoardController) Move(dir Direction) {
 	}
 }
 
+// Attempting to rotate left or right will rotate in place if
+// possible, and possibly shift the tetromino along the x-axis to make
+// it fit. So it will rotate AND possibly move the tetromino
+func (ctl *BoardController) RotLeft() {
+	for _, p := range ctl.tet.ListPositions() {
+		ctl.board.SetTile(EMPTY, p.x, p.y)
+	}
+
+	// Apply the rotation
+	ctl.tet.RotLeft()
+
+	// Because our box for tetrominos is drawn from the top left,
+	// there are two cases we need to consider.
+	// 1. Pushing to the left on the X-Axis
+	// 2. Pushing up on the Y-Axis
+	maxX := BOARD_WIDTH - 1
+	minY := 0
+	for _, p := range ctl.tet.ListPositions() {
+		// Find minimum x and y values
+		if p.x > maxX {
+			maxX = p.x
+		}
+		if p.y < minY {
+			minY = p.y
+		}
+	}
+
+	// Shift in needed directions so it's in bounds, then check for
+	// any collisions
+	deltaX := maxX - (BOARD_WIDTH - 1)
+	deltaY := 0 - minY
+	projectedTet := ctl.tet
+	for i := 0; i < deltaX; i++ {
+		projectedTet = projectedTet.Move(LEFT)
+	}
+	for i := 0; i < deltaY; i++ {
+		projectedTet = projectedTet.Move(UP)
+	}
+
+	// Check for internal collisions
+	var colliding bool
+	for _, p := range projectedTet.ListPositions() {
+		if !ctl.board.IsEmpty(p.x, p.y) {
+			colliding = true
+			break
+		}
+	}
+
+	if colliding {
+		// Undo the rotation, the operation is idempotent
+		ctl.tet.RotRight()
+	} else {
+		// Update the position of the tetromino
+		ctl.tet = projectedTet
+	}
+
+	for _, p := range ctl.tet.ListPositions() {
+		ctl.board.SetTile(ShapeToTC(ctl.tet.shape), p.x, p.y)
+	}
+}
+
+func (ctl *BoardController) RotRight() {
+	for _, p := range ctl.tet.ListPositions() {
+		ctl.board.SetTile(EMPTY, p.x, p.y)
+	}
+
+	ctl.tet.RotRight()
+
+	maxX := BOARD_WIDTH - 1
+	minY := 0
+	for _, p := range ctl.tet.ListPositions() {
+		// Find minimum x and y values
+		if p.x > maxX {
+			maxX = p.x
+		}
+		if p.y < minY {
+			minY = p.y
+		}
+	}
+
+	deltaX := maxX - (BOARD_WIDTH - 1)
+	deltaY := 0 - minY
+	projectedTet := ctl.tet
+	for i := 0; i < deltaX; i++ {
+		projectedTet = projectedTet.Move(LEFT)
+	}
+	for i := 0; i < deltaY; i++ {
+		projectedTet = projectedTet.Move(UP)
+	}
+
+	var colliding bool
+	for _, p := range projectedTet.ListPositions() {
+		if !ctl.board.IsEmpty(p.x, p.y) {
+			colliding = true
+			break
+		}
+	}
+
+	if colliding {
+		ctl.tet.RotLeft()
+	} else {
+		ctl.tet = projectedTet
+	}
+
+	for _, p := range ctl.tet.ListPositions() {
+		ctl.board.SetTile(ShapeToTC(ctl.tet.shape), p.x, p.y)
+	}
+}
+
 // Slam will have a tetromino fall all the way to the bottom of the
 // board, or until it reaches something along it's path to the bottom.
 func (ctl *BoardController) Slam() {

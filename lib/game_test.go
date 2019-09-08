@@ -393,3 +393,54 @@ func TestNextTetTetris(t *testing.T) {
 		}
 	}
 }
+
+func TestBoardControllerRotation(t *testing.T) {
+	// Setup
+	board := &Board{}
+	source := make(chan *Tetromino, 10)
+	source <- NewTet(TET_LINE)
+	source <- NewTet(TET_LINE)
+	counter := make(chan int, 10)
+	ctl := NewBoardController(board, source, counter)
+
+	// Move our line peice all the way to the right, as far as it will
+	// go
+	for ctl.tet.CanMove(RIGHT, ctl.board) {
+		ctl.Move(RIGHT)
+	}
+
+	// Now attempt a rotation. Since this is on the edge of the board,
+	// it should force our position to change
+	pInit := ctl.tet.Position
+
+	ctl.RotLeft()
+
+	pEnd := ctl.tet.Position
+
+	if pInit == pEnd {
+		t.Errorf("Start and end positions are same: %v, expected them to be different", pInit)
+	}
+
+	// Move it towards the center and set it vertical
+	ctl.Move(LEFT)
+	ctl.Move(LEFT)
+	ctl.Move(LEFT)
+	ctl.Move(LEFT)
+	ctl.Move(LEFT)
+	ctl.RotRight()
+
+	// Set the tiles to the left and right of the tetromino, to ensure
+	// it can't rotate while boxed
+	for _, p := range ctl.tet.ListPositions() {
+		ctl.board.SetTile(C1, p.x+1, p.y)
+		ctl.board.SetTile(C1, p.x-1, p.y)
+	}
+
+	initPositions := ctl.tet.ListPositions()
+	ctl.RotLeft()
+	for i, p := range ctl.tet.ListPositions() {
+		if initPositions[i] != p {
+			t.Errorf("Tetromino rotated when surrounded by tiles. Expected %v, found %v", initPositions[i], p)
+		}
+	}
+}
