@@ -339,3 +339,53 @@ func TestSlam(t *testing.T) {
 		}
 	}
 }
+
+// Ensure the tetris effect is applied when NextTet is called
+func TestNextTetTetris(t *testing.T) {
+	board := &Board{}
+	source := make(chan *Tetromino, 10)
+	source <- NewTet(TET_T)
+	source <- NewTet(TET_T)
+	ctl := NewBoardController(board, source)
+
+	// Set all but one tile in the bottom of a board to non empty
+	for x := 0; x < BOARD_WIDTH; x++ {
+		board.SetTile(C1, x, 0)
+	}
+	// Clear the middle tile
+	board.SetTile(EMPTY, 5, 0)
+
+	// Slam that T-Piece right down into the center, filling that hole
+	ctl.Slam()
+	ctl.NextTet()
+
+	// There should only be 3 tiles in the entire board
+	var tileCount int
+	var tile TileColor
+	for y := 0; y < BOARD_HEIGHT; y++ {
+		for x := 0; x < BOARD_WIDTH; x++ {
+			tile = board.GetTile(x, y)
+			if tile != EMPTY {
+				t.Logf("Tile with color %v found at postion (%v, %v)", tile, x, y)
+				tileCount++
+			}
+		}
+	}
+
+	// There should be three tiles remaining, after the tetris, and
+	// the tiles for the next tetromino, so a total of 7
+	const EXP_COUNT = 7
+	if tileCount != EXP_COUNT {
+		t.Errorf("Unexpected number of tiles. Expected %v, found: %v", EXP_COUNT, tileCount)
+	}
+
+	// These specified positions should have the TET_T color
+	// associated with them
+	ps := []Position{{4, 0}, {5, 0}, {6, 0}}
+	expectedColor := ShapeToTC(TET_T)
+	for _, p := range ps {
+		if color := board.GetTile(p.x, p.y); color != expectedColor {
+			t.Errorf("Unexpected color at position %v, found %v, expected %v", p, color, expectedColor)
+		}
+	}
+}
