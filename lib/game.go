@@ -19,7 +19,7 @@ const (
 	RIGHT
 )
 
-const STARTING_X = 5
+const STARTING_X = 4
 const STARTING_Y = 23
 
 func NewActiveTet(t *Tetromino) ActiveTetromino {
@@ -115,8 +115,12 @@ func NewBoardController(board *Board, source <-chan *Tetromino) *BoardController
 
 // Recieves next tetromino from channel, and changes the active
 // tetromino to the next one received. This implicitly locks the tiles
-// of whatever the previous tetromino was.
+// of whatever the previous tetromino was and alters the state of the
+// board by applying tetris
 func (ctl *BoardController) NextTet() {
+	// Apply the tetris if possible
+	ctl.board.Tetris()
+
 	// NewActiveTet will handle setting the default position
 	ctl.tet = NewActiveTet(<-ctl.tetSource)
 
@@ -139,7 +143,7 @@ func (ctl *BoardController) Move(dir Direction) {
 
 		// Set the new tiles
 		for _, p := range ctl.tet.ListPositions() {
-			ctl.board.SetTile(TileColor(ctl.tet.shape), p.x, p.y)
+			ctl.board.SetTile(ShapeToTC(ctl.tet.shape), p.x, p.y)
 		}
 	}
 }
@@ -158,7 +162,7 @@ func (ctl *BoardController) Slam() {
 
 	// Set the tiles again
 	for _, p := range ctl.tet.ListPositions() {
-		ctl.board.SetTile(TileColor(ctl.tet.shape), p.x, p.y)
+		ctl.board.SetTile(ShapeToTC(ctl.tet.shape), p.x, p.y)
 	}
 }
 
