@@ -133,21 +133,31 @@ func (ctl *BoardController) NextTet() {
 	}
 }
 
+// This is a helper function that let's us pass a function, and
+// inbetween, we'll unset and then set the tiles. This ensures we
+// don't leave any copies around. If no state changes, the tiles
+// should be put where they were before
+func (ctl *BoardController) updateTiles(callback func() ActiveTetromino) {
+	// Unset the tiles
+	for _, p := range ctl.tet.ListPositions() {
+		ctl.board.SetTile(EMPTY, p.x, p.y)
+	}
+
+	ctl.tet = callback()
+
+	// Set the new tiles
+	for _, p := range ctl.tet.ListPositions() {
+		ctl.board.SetTile(ShapeToTC(ctl.tet.shape), p.x, p.y)
+	}
+}
+
 // Move will idempotently move the active tetris piece. If it can't be
 // moved, then it won't be moved.
 func (ctl *BoardController) Move(dir Direction) {
 	if ctl.tet.CanMove(dir, ctl.board) {
-		// Erase tiles from board
-		for _, p := range ctl.tet.ListPositions() {
-			ctl.board.SetTile(EMPTY, p.x, p.y)
-		}
-
-		ctl.tet = ctl.tet.Move(dir)
-
-		// Set the new tiles
-		for _, p := range ctl.tet.ListPositions() {
-			ctl.board.SetTile(ShapeToTC(ctl.tet.shape), p.x, p.y)
-		}
+		ctl.updateTiles(func() ActiveTetromino {
+			return ctl.tet.Move(dir)
+		})
 	}
 }
 
@@ -163,89 +173,80 @@ func (ctl *BoardController) rotate(isLeft bool) {
 		rotationInverse = ctl.tet.RotLeft
 	}
 
-	for _, p := range ctl.tet.ListPositions() {
-		ctl.board.SetTile(EMPTY, p.x, p.y)
-	}
+	ctl.updateTiles(func() ActiveTetromino {
+		// Apply the rotation
+		rotationFunc()
 
-	// Apply the rotation
-	rotationFunc()
+		// Consider all edge cases
+		// 1. Pushing to the left on the X-Axis
+		// 2. Pushing up on the Y-Axis
+		// 3. Pushing to the right on the X-Axis
+		// 4. Pushing down on th Y- axis
+		minX := 0
+		minY := 0
+		maxX := BOARD_WIDTH - 1
+		maxY := BOARD_HEIGHT - 1
+		for _, p := range ctl.tet.ListPositions() {
+			// Find minimum and maximum x and y values
+			if p.x > maxX {
+				maxX = p.x
+			} else if p.x < minX {
+				minX = p.x
+			}
 
-	// Consider all edge cases
-	// 1. Pushing to the left on the X-Axis
-	// 2. Pushing up on the Y-Axis
-	// 3. Pushing to the right on the X-Axis
-	// 4. Pushing down on th Y- axis
-	minX := 0
-	minY := 0
-	maxX := BOARD_WIDTH - 1
-	maxY := BOARD_HEIGHT - 1
-	for _, p := range ctl.tet.ListPositions() {
-		// Find minimum and maximum x and y values
-		if p.x > maxX {
-			maxX = p.x
-		} else if p.x < minX {
-			minX = p.x
+			if p.y < minY {
+				minY = p.y
+			} else if p.y > maxY {
+				maxY = p.y
+			}
 		}
 
-		if p.y < minY {
-			minY = p.y
-		} else if p.y > maxY {
-			maxY = p.y
+		// Shift in needed directions so it's in bounds, then check for
+		// any collisions
+		var deltaX, deltaY int
+		var yDir, xDir Direction
+
+		// The direction and delta we apply depends on which threshold
+		// was crossed.
+		if minX < 0 {
+			deltaX = 0 - minX
+			xDir = RIGHT
+		} else {
+			deltaX = maxX - (BOARD_WIDTH - 1)
+			xDir = LEFT
 		}
-	}
 
-	// Shift in needed directions so it's in bounds, then check for
-	// any collisions
-	var deltaX, deltaY int
-	var yDir, xDir Direction
-
-	// The direction and delta we apply depends on which threshold
-	// was crossed.
-	if minX < 0 {
-		deltaX = 0 - minX
-		xDir = RIGHT
-	} else {
-		deltaX = maxX - (BOARD_WIDTH - 1)
-		xDir = LEFT
-	}
-
-	if minY < 0 {
-		deltaY = 0 - minY
-		yDir = UP
-	} else {
-		deltaY = maxY - (BOARD_HEIGHT - 1)
-		yDir = DOWN
-	}
-
-	projectedTet := ctl.tet
-	for i := 0; i < deltaX; i++ {
-		projectedTet = projectedTet.Move(xDir)
-	}
-	for i := 0; i < deltaY; i++ {
-		projectedTet = projectedTet.Move(yDir)
-	}
-
-	// Check for internal collisions
-	var colliding bool
-	for _, p := range projectedTet.ListPositions() {
-		if !ctl.board.IsEmpty(p.x, p.y) {
-			colliding = true
-			break
+		if minY < 0 {
+			deltaY = 0 - minY
+			yDir = UP
+		} else {
+			deltaY = maxY - (BOARD_HEIGHT - 1)
+			yDir = DOWN
 		}
-	}
 
-	if colliding {
-		// Undo the rotation, the operation is idempotent
-		rotationInverse()
-	} else {
-		// Update the position of the tetromino
-		ctl.tet = projectedTet
-	}
+		projectedTet := ctl.tet
+		for i := 0; i < deltaX; i++ {
+			projectedTet = projectedTet.Move(xDir)
+		}
+		for i := 0; i < deltaY; i++ {
+			projectedTet = projectedTet.Move(yDir)
+		}
 
-	for _, p := range ctl.tet.ListPositions() {
-		ctl.board.SetTile(ShapeToTC(ctl.tet.shape), p.x, p.y)
-	}
+		// Check for internal collisions
+		var colliding bool
+		for _, p := range projectedTet.ListPositions() {
+			if !ctl.board.IsEmpty(p.x, p.y) {
+				colliding = true
+				break
+			}
+		}
 
+		if colliding {
+			// Undo the rotation, the operation is idempotent
+			rotationInverse()
+		}
+		return projectedTet
+	})
 }
 
 // Attempting to rotate left or right will rotate in place if
@@ -262,19 +263,15 @@ func (ctl *BoardController) RotRight() {
 // Slam will have a tetromino fall all the way to the bottom of the
 // board, or until it reaches something along it's path to the bottom.
 func (ctl *BoardController) Slam() {
-	for _, p := range ctl.tet.ListPositions() {
-		ctl.board.SetTile(EMPTY, p.x, p.y)
-	}
+	ctl.updateTiles(func() ActiveTetromino {
+		// Move as far down as possible
+		projectedTet := ctl.tet
+		for projectedTet.CanMove(DOWN, ctl.board) {
+			projectedTet = projectedTet.Move(DOWN)
+		}
 
-	// Move as far down as possible
-	for ctl.tet.CanMove(DOWN, ctl.board) {
-		ctl.tet = ctl.tet.Move(DOWN)
-	}
-
-	// Set the tiles again
-	for _, p := range ctl.tet.ListPositions() {
-		ctl.board.SetTile(ShapeToTC(ctl.tet.shape), p.x, p.y)
-	}
+		return projectedTet
+	})
 }
 
 type Game struct {
