@@ -559,3 +559,71 @@ func TestNaturalGameOver(t *testing.T) {
 		t.Error("No gameover detected")
 	}
 }
+
+// Tests that the coordination between goroutines makes sense and
+// doesn't block when we listen for messages across different
+// channels. This intentionally uses unbuffered channels to ensure any
+// problems reveal themselves.
+func TestBoardControllerListen(t *testing.T) {
+	// Setup
+	board := &Board{}
+	source := make(chan *Tetromino)
+	// Randomly generate shapes for tetrominos
+	go func() {
+		for s := range ShapeGenerator(0) {
+			source <- NewTet(s)
+		}
+	}()
+
+	// Consume all lines
+	counter := make(chan int)
+	var lines int
+	go func() {
+		for n := range counter {
+			lines += n
+		}
+	}()
+
+	gameover := make(chan struct{})
+	go func() {
+		<-gameover
+	}()
+
+	ctl := NewBoardController(board, source, counter, gameover)
+
+	moves := make(chan Movement)
+	down := make(chan struct{})
+
+	// This goroutine sends a pattern of movements that should shift
+	// things along the board
+	go func() {
+		for {
+			// Move in 10 random directions
+			for i := 0; i < 10; i++ {
+				moves <- Movement(rand.Intn(4))
+			}
+			// Rotate left or right
+			if rand.Intn(2) > 0 {
+				moves <- MOVE_ROTATE_LEFT
+			} else {
+				moves <- MOVE_ROTATE_RIGHT
+			}
+
+			// Finally slam down
+			moves <- MOVE_SLAM
+			// send a signal to the down channel which shold lock
+			// things in place since we just slammed the tet
+			var downSig struct{}
+			down <- downSig
+		}
+	}()
+
+	// Blocks until the game finishes
+	ctl.Listen(moves, down)
+
+	// Check that the gameover channel is closed now that the game is
+	// compoleted
+	if _, ok := <-gameover; ok {
+		t.Error("Channel is not closed after listen method returned")
+	}
+}

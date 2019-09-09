@@ -105,6 +105,7 @@ type BoardController struct {
 	tetSource   <-chan *Tetromino
 	lineCounter chan<- int
 	gameover    chan<- struct{}
+	isGameover  bool
 }
 
 func NewBoardController(
@@ -142,6 +143,9 @@ func (ctl *BoardController) NextTet() {
 			if p.y == GAMEOVER_LINE {
 				var gameoverSignal struct{}
 				ctl.gameover <- gameoverSignal
+				close(ctl.gameover)
+
+				ctl.isGameover = true
 				return
 			}
 		}
@@ -156,6 +160,9 @@ func (ctl *BoardController) NextTet() {
 		if !ctl.board.IsEmpty(p.x, p.y) {
 			var gameoverSignal struct{}
 			ctl.gameover <- gameoverSignal
+			close(ctl.gameover)
+
+			ctl.isGameover = true
 			return
 		}
 	}
@@ -322,22 +329,41 @@ const (
 // The Listen method connects to a movement channel which provides an
 // input movement for the tetromino and moves it around. This could be
 // as simple as a list of dedicated movements, or it could be tied to
-// a real world input source to get interactive movement
-func (ctl *BoardController) Listen(moves chan Movement) {
+// a real world input source to get interactive movement.
+//
+// There's a 2nd channel provided which is meant for locking the peice
+// in place and triggering the next tetromino. In a normal game this
+// can be constructed from a ticker that forces the tetromino to move
+// down at a regular rate.
+//
+// This function will block until the game finishes. It will return
+// immediately after the gameover signal has been fired
+func (ctl *BoardController) Listen(moves <-chan Movement, down <-chan struct{}) {
 	var dir Direction
 
-	for move := range moves {
-		if move <= MOVE_RIGHT {
-			dir = Direction(move)
-			ctl.Move(dir)
-		} else {
-			switch move {
-			case MOVE_SLAM:
-				ctl.Slam()
-			case MOVE_ROTATE_LEFT:
-				ctl.RotLeft()
-			case MOVE_ROTATE_RIGHT:
-				ctl.RotRight()
+	for !ctl.isGameover {
+
+		select {
+		case move := <-moves:
+			if move <= MOVE_RIGHT {
+				dir = Direction(move)
+				ctl.Move(dir)
+			} else {
+				switch move {
+				case MOVE_SLAM:
+					ctl.Slam()
+				case MOVE_ROTATE_LEFT:
+					ctl.RotLeft()
+				case MOVE_ROTATE_RIGHT:
+					ctl.RotRight()
+				}
+			}
+
+		case <-down:
+			if !ctl.tet.CanMove(DOWN, ctl.board) {
+				ctl.NextTet()
+			} else {
+				ctl.Move(DOWN)
 			}
 		}
 	}
