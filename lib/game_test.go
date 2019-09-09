@@ -521,3 +521,42 @@ func TestGameOver(t *testing.T) {
 		t.Error("Gameover signal not found")
 	}
 }
+
+func TestNaturalGameOver(t *testing.T) {
+	// Setup
+	board := &Board{}
+	source := make(chan *Tetromino, 10)
+	// We need to queue up an extra shape, or we'll deadlock
+	source <- NewTet(TET_LINE)
+	source <- NewTet(TET_LINE)
+	source <- NewTet(TET_LINE)
+	source <- NewTet(TET_LINE)
+	source <- NewTet(TET_LINE)
+	source <- NewTet(TET_LINE)
+	source <- NewTet(TET_LINE)
+	counter := make(chan int, 10)
+	gameover := make(chan struct{}, 1)
+	ctl := NewBoardController(board, source, counter, gameover)
+
+	for i := 0; i < 5; i++ {
+		ctl.Slam()
+		ctl.NextTet()
+		select {
+		case <-gameover:
+			t.Error("Gameover detected early")
+		default:
+		}
+	}
+
+
+	ctl.Slam()
+	ctl.NextTet()
+
+	// After 6 line peices, a game over should activate
+	select {
+	case <-gameover:
+		return
+	default:
+		t.Error("No gameover detected")
+	}
+}
