@@ -307,6 +307,42 @@ func (ctl *BoardController) Slam() {
 	})
 }
 
+type Movement int
+
+const (
+	MOVE_UP Movement = iota
+	MOVE_DOWN
+	MOVE_LEFT
+	MOVE_RIGHT
+	MOVE_SLAM
+	MOVE_ROTATE_LEFT
+	MOVE_ROTATE_RIGHT
+)
+
+// The Listen method connects to a movement channel which provides an
+// input movement for the tetromino and moves it around. This could be
+// as simple as a list of dedicated movements, or it could be tied to
+// a real world input source to get interactive movement
+func (ctl *BoardController) Listen(moves chan Movement) {
+	var dir Direction
+
+	for move := range moves {
+		if move <= MOVE_RIGHT {
+			dir = Direction(move)
+			ctl.Move(dir)
+		} else {
+			switch move {
+			case MOVE_SLAM:
+				ctl.Slam()
+			case MOVE_ROTATE_LEFT:
+				ctl.RotLeft()
+			case MOVE_ROTATE_RIGHT:
+				ctl.RotRight()
+			}
+		}
+	}
+}
+
 type Game struct {
 	// Keeps track of number of lines that have been cleared
 	lines int

@@ -548,7 +548,6 @@ func TestNaturalGameOver(t *testing.T) {
 		}
 	}
 
-
 	ctl.Slam()
 	ctl.NextTet()
 
