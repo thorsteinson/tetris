@@ -491,3 +491,33 @@ func TestRandomWalkStressTest(t *testing.T) {
 		ctl.NextTet()
 	}
 }
+
+func TestGameOver(t *testing.T) {
+	// Setup
+	board := &Board{}
+	source := make(chan *Tetromino, 10)
+	// We need to queue up an extra shape, or we'll deadlock
+	source <- NewTet(TET_SQUARE)
+	source <- NewTet(TET_SQUARE)
+	source <- NewTet(TET_SQUARE)
+	counter := make(chan int, 10)
+	gameover := make(chan struct{}, 1)
+	ctl := NewBoardController(board, source, counter, gameover)
+
+	select {
+	case <-gameover:
+		t.Error("Gameover signal detected too early")
+	default:
+	}
+
+	ctl.NextTet()
+
+	// A gameover should now activate, since we placed two tetrominos
+	// directly over one another
+	select {
+	case <-gameover:
+		return
+	default:
+		t.Error("Gameover signal not found")
+	}
+}
