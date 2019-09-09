@@ -22,6 +22,8 @@ const (
 const STARTING_X = 4
 const STARTING_Y = 23
 
+const GAMEOVER_LINE = 20
+
 func NewActiveTet(t *Tetromino) ActiveTetromino {
 	return ActiveTetromino{
 		Tetromino: t,
@@ -102,13 +104,20 @@ type BoardController struct {
 	tet         ActiveTetromino
 	tetSource   <-chan *Tetromino
 	lineCounter chan<- int
+	gameover    chan<- struct{}
 }
 
-func NewBoardController(board *Board, source <-chan *Tetromino, lines chan<- int) *BoardController {
+func NewBoardController(
+	board *Board,
+	source <-chan *Tetromino,
+	lines chan<- int,
+	gameover chan<- struct{},
+) *BoardController {
 	ctl := &BoardController{
 		board:       board,
 		tetSource:   source,
 		lineCounter: lines,
+		gameover:    gameover,
 	}
 	ctl.NextTet()
 
@@ -120,12 +129,36 @@ func NewBoardController(board *Board, source <-chan *Tetromino, lines chan<- int
 // of whatever the previous tetromino was and alters the state of the
 // board by applying tetris
 func (ctl *BoardController) NextTet() {
+	// This is the value of ctl.tet before it's been set. Need to do a
+	// comparison with this so don't compare against a nil value when
+	// checking the gameover line
+	initTet := ActiveTetromino{}
+
 	if lines := ctl.board.Tetris(); lines > 0 {
 		ctl.lineCounter <- lines
+	} else if ctl.tet != initTet {
+		// Check for whether they are on the gameover line
+		for _, p := range ctl.tet.ListPositions() {
+			if p.y == GAMEOVER_LINE {
+				var gameoverSignal struct{}
+				ctl.gameover <- gameoverSignal
+				return
+			}
+		}
 	}
 
 	// NewActiveTet will handle setting the default position
 	ctl.tet = NewActiveTet(<-ctl.tetSource)
+
+	// Check for a collision, and send the gameover signal if one is
+	// detected.
+	for _, p := range ctl.tet.ListPositions() {
+		if !ctl.board.IsEmpty(p.x, p.y) {
+			var gameoverSignal struct{}
+			ctl.gameover <- gameoverSignal
+			return
+		}
+	}
 
 	// Set new tiles
 	for _, p := range ctl.tet.ListPositions() {
