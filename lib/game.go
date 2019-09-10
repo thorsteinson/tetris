@@ -366,8 +366,9 @@ func (ctl *BoardController) Listen(moves <-chan Movement) {
 		case move := <-moves:
 			if move <= MOVE_RIGHT {
 				dir = Direction(move)
-				if dir == DOWN {
-					// A downwards movement should reset our timer.
+				if dir == DOWN && ctl.tet.CanMove(DOWN, ctl.board) {
+					// A downwards movement should reset our
+					// timer. But only if we're not already blocked.
 					ctl.timer.Reset()
 				}
 				ctl.Move(dir)
