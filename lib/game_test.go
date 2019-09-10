@@ -3,6 +3,7 @@ package lib
 import (
 	"math/rand"
 	"testing"
+	"time"
 )
 
 func TestActiveTetrominoMove(t *testing.T) {
@@ -216,7 +217,7 @@ func TestBoardControllerNextTet(t *testing.T) {
 	counter := make(chan int, 10)
 	gameover := make(chan struct{})
 
-	ctl := NewBoardController(board, source, counter, gameover)
+	ctl := NewBoardController(board, source, counter, gameover, 0)
 
 	// Check that the active tet has a line shape
 	if ctl.tet.shape != TET_LINE {
@@ -270,7 +271,7 @@ func TestBoardControllerMove(t *testing.T) {
 		counter := make(chan int, 10)
 		gameover := make(chan struct{})
 
-		ctl := NewBoardController(board, source, counter, gameover)
+		ctl := NewBoardController(board, source, counter, gameover, 0)
 
 		// Move randomly 100 times. If our movement code is safe, then it
 		// should end up just fine without crashing. It's also highly
@@ -323,7 +324,7 @@ func TestSlam(t *testing.T) {
 		source <- NewTet(test.shape)
 		counter := make(chan int, 10)
 		gameover := make(chan struct{})
-		ctl := NewBoardController(board, source, counter, gameover)
+		ctl := NewBoardController(board, source, counter, gameover, 0)
 
 		for _, p := range test.boardPositions {
 			ctl.board.SetTile(ShapeToTC(test.shape), p.x, p.y)
@@ -354,7 +355,7 @@ func TestNextTetTetris(t *testing.T) {
 	source <- NewTet(TET_T)
 	counter := make(chan int, 10)
 	gameover := make(chan struct{})
-	ctl := NewBoardController(board, source, counter, gameover)
+	ctl := NewBoardController(board, source, counter, gameover, 0)
 
 	// Set all but one tile in the bottom of a board to non empty
 	for x := 0; x < BOARD_WIDTH; x++ {
@@ -406,7 +407,7 @@ func TestBoardControllerRotation(t *testing.T) {
 	source <- NewTet(TET_LINE)
 	counter := make(chan int, 10)
 	gameover := make(chan struct{})
-	ctl := NewBoardController(board, source, counter, gameover)
+	ctl := NewBoardController(board, source, counter, gameover, 0)
 
 	// Move our line peice all the way to the right, as far as it will
 	// go
@@ -463,7 +464,7 @@ func TestRandomWalkStressTest(t *testing.T) {
 	source <- NewTet(TET_SQUARE)
 	counter := make(chan int, 10)
 	gameover := make(chan struct{})
-	ctl := NewBoardController(board, source, counter, gameover)
+	ctl := NewBoardController(board, source, counter, gameover, 0)
 
 	const MOVEMENTS = 1000
 
@@ -502,7 +503,7 @@ func TestGameOver(t *testing.T) {
 	source <- NewTet(TET_SQUARE)
 	counter := make(chan int, 10)
 	gameover := make(chan struct{}, 1)
-	ctl := NewBoardController(board, source, counter, gameover)
+	ctl := NewBoardController(board, source, counter, gameover, 0)
 
 	select {
 	case <-gameover:
@@ -536,7 +537,7 @@ func TestNaturalGameOver(t *testing.T) {
 	source <- NewTet(TET_LINE)
 	counter := make(chan int, 10)
 	gameover := make(chan struct{}, 1)
-	ctl := NewBoardController(board, source, counter, gameover)
+	ctl := NewBoardController(board, source, counter, gameover, 0)
 
 	for i := 0; i < 5; i++ {
 		ctl.Slam()
@@ -589,10 +590,11 @@ func TestBoardControllerListen(t *testing.T) {
 		<-gameover
 	}()
 
-	ctl := NewBoardController(board, source, counter, gameover)
+	const SLEEP_TIME = time.Microsecond * 250
+
+	ctl := NewBoardController(board, source, counter, gameover, SLEEP_TIME)
 
 	moves := make(chan Movement)
-	down := make(chan struct{})
 
 	// This goroutine sends a pattern of movements that should shift
 	// things along the board
@@ -611,15 +613,14 @@ func TestBoardControllerListen(t *testing.T) {
 
 			// Finally slam down
 			moves <- MOVE_SLAM
-			// send a signal to the down channel which shold lock
-			// things in place since we just slammed the tet
-			var downSig struct{}
-			down <- downSig
+
+			// Do nothing, which should then trigger our reset timer
+			time.Sleep(SLEEP_TIME)
 		}
 	}()
 
 	// Blocks until the game finishes
-	ctl.Listen(moves, down)
+	ctl.Listen(moves)
 
 	// Check that the gameover channel is closed now that the game is
 	// compoleted

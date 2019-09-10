@@ -47,7 +47,14 @@ func NewResetTimer(duration time.Duration) *ResetTimer {
 
 func (t *ResetTimer) Reset() {
 	var resetSig struct{}
-	t.reset <- resetSig
+
+	// Forces method to be non blocking. Avoids deadlocks when we're
+	// selecting on the timer output and perform a reset.
+	select {
+	case t.reset <- resetSig:
+	default:
+		return
+	}
 }
 
 func (t *ResetTimer) Stop() {

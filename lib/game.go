@@ -1,5 +1,9 @@
 package lib
 
+import (
+	"time"
+)
+
 // A tetromino that also has positional information so it can move
 // around a board
 type ActiveTetromino struct {
@@ -95,6 +99,8 @@ func (tet ActiveTetromino) CanMove(dir Direction, board *Board) bool {
 	return true
 }
 
+const DEFAULT_DURATION = time.Second
+
 // A BoardController is an entity that manages the state of a board
 // and an active tetromino. It moves the tetromino around with respect
 // to the board, and can glue the tetromino to the board as one would
@@ -106,6 +112,7 @@ type BoardController struct {
 	lineCounter chan<- int
 	gameover    chan<- struct{}
 	isGameover  bool
+	timer       *ResetTimer
 }
 
 func NewBoardController(
@@ -113,12 +120,23 @@ func NewBoardController(
 	source <-chan *Tetromino,
 	lines chan<- int,
 	gameover chan<- struct{},
+	dur time.Duration,
 ) *BoardController {
+
+	var timerDur time.Duration
+	// Compare the zero value
+	if dur != timerDur {
+		timerDur = dur
+	} else {
+		timerDur = DEFAULT_DURATION
+	}
+
 	ctl := &BoardController{
 		board:       board,
 		tetSource:   source,
 		lineCounter: lines,
 		gameover:    gameover,
+		timer:       NewResetTimer(timerDur),
 	}
 	ctl.NextTet()
 
@@ -338,20 +356,28 @@ const (
 //
 // This function will block until the game finishes. It will return
 // immediately after the gameover signal has been fired
-func (ctl *BoardController) Listen(moves <-chan Movement, down <-chan struct{}) {
+func (ctl *BoardController) Listen(moves <-chan Movement) {
 	var dir Direction
 
+	// Repeat this loop until the game finishes
 	for !ctl.isGameover {
 
 		select {
 		case move := <-moves:
 			if move <= MOVE_RIGHT {
 				dir = Direction(move)
+				if dir == DOWN {
+					// A downwards movement should reset our timer.
+					ctl.timer.Reset()
+				}
 				ctl.Move(dir)
 			} else {
 				switch move {
 				case MOVE_SLAM:
 					ctl.Slam()
+
+					ctl.timer.Reset()
+
 				case MOVE_ROTATE_LEFT:
 					ctl.RotLeft()
 				case MOVE_ROTATE_RIGHT:
@@ -359,7 +385,7 @@ func (ctl *BoardController) Listen(moves <-chan Movement, down <-chan struct{}) 
 				}
 			}
 
-		case <-down:
+		case <-ctl.timer.out:
 			if !ctl.tet.CanMove(DOWN, ctl.board) {
 				ctl.NextTet()
 			} else {
