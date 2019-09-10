@@ -398,17 +398,95 @@ func (ctl *BoardController) Listen(moves <-chan Movement) {
 
 type Game struct {
 	// Keeps track of number of lines that have been cleared
-	lines int
-	score int
-	// A board that contains all of the static tiles in the game
-	staticBoard Board
-	// A board that only has tiles for the current tetromino in play
-	playerBoard Board
-	// A source of random tetrominos
-	tetrominos chan *Tetromino
-	// The next tetromino that will be put into player after the
-	// current one is finishes
-	nextTet *Tetromino
-	// The current tetromino in play
-	currentTet ActiveTetromino
+	lines          int
+	score          int
+	controller     *BoardController
+	level          int
+	nextTet        *Tetromino
+	moves          <-chan Movement
+	linesToNextLvl int
+}
+
+// Create a new game with a given random seed, and hook it to some
+// sort of movement channel to get inputs
+func NewGame(seed int64, moves <-chan Movement) *Game {
+
+	const LINES_PER_LVL = 10
+	const MAX_LEVEL = 20
+	const DURATION_DIFF = 50 * time.Millisecond
+
+	// 	board *Board,
+	// 	source <-chan *Tetromino,
+	// 	lines chan<- int,
+	// 	gameover chan<- struct{},
+	// 	dur time.Duration,
+
+	var next *Tetromino
+
+	// Create infinite stream of tetrominos
+	tets := make(chan *Tetromino)
+	go func() {
+		for s := range ShapeGenerator(seed) {
+			nextTet := NewTet(s)
+			// Update the pointer, so it points to the value that will
+			// be next be consumed when the board calls NextTet(),
+			// this gives us our preview
+			next = nextTet
+			// Push the value to the channel
+			tets <- nextTet
+		}
+	}()
+
+	lineC := make(chan int)
+
+	gameoverC := make(chan struct{})
+
+	game := &Game{
+		controller: NewBoardController(
+			&Board{},
+			tets,
+			lineC,
+			gameoverC,
+			0,
+		),
+		score:          0,
+		level:          1,
+		linesToNextLvl: LINES_PER_LVL,
+		nextTet:        next,
+	}
+
+	// Increase line counter as it updates, and modify level if we
+	// reach a threshold
+	go func() {
+		for cleared := range lineC {
+			game.score += 100 * cleared
+
+			game.lines += cleared
+			game.linesToNextLvl -= cleared
+			if game.linesToNextLvl < 0 {
+				// increment the lvl
+				if game.level < MAX_LEVEL {
+					game.level++
+
+					// Modify the speed of the game, decrease duration
+					// between turns thus speeding it up.
+					game.controller.timer.duration -= DURATION_DIFF
+				}
+
+				// Reset level counter
+				game.linesToNextLvl = LINES_PER_LVL
+
+				// Apply score bonus
+				game.score += game.level * 1000
+
+			}
+		}
+	}()
+
+	return game
+}
+
+// Runs a game to completion
+func (game *Game) Run() {
+	game.controller.Listen(game.moves)
 }
