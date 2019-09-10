@@ -359,10 +359,33 @@ const (
 func (ctl *BoardController) Listen(moves <-chan Movement) {
 	var dir Direction
 
+	down := func() {
+		if !ctl.tet.CanMove(DOWN, ctl.board) {
+			ctl.NextTet()
+		} else {
+			ctl.Move(DOWN)
+		}
+	}
+
 	// Repeat this loop until the game finishes
 	for !ctl.isGameover {
 
+		// Prioritized selection. We always want to ensure that the
+		// timer is the event we respond to if we have to choose, so
+		// we use 2 select statements. The first checks for the timer
+		// alone, meaning it will succeed if present. Then we fallback
+		// to the more general case where we go for both.
 		select {
+		case <-ctl.timer.out:
+			down()
+			continue
+		default:
+		}
+
+		select {
+		case <-ctl.timer.out:
+			down()
+
 		case move := <-moves:
 			if move <= MOVE_RIGHT {
 				dir = Direction(move)
@@ -385,14 +408,8 @@ func (ctl *BoardController) Listen(moves <-chan Movement) {
 					ctl.RotRight()
 				}
 			}
-
-		case <-ctl.timer.out:
-			if !ctl.tet.CanMove(DOWN, ctl.board) {
-				ctl.NextTet()
-			} else {
-				ctl.Move(DOWN)
-			}
 		}
+
 	}
 }
 
