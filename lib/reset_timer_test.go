@@ -71,3 +71,23 @@ func TestResetTimerReset(t *testing.T) {
 		t.Errorf("Duration outside minimum of %v and max of %v; found %v", minDur, maxDur, dur)
 	}
 }
+
+func TestResetTimerChangeDuration(t *testing.T) {
+	const SMALL_DUR = time.Microsecond * 10
+	const LARGE_DUR = time.Microsecond * 500
+
+	// Create a timer with a ridiculously small
+	rTimer := NewResetTimer(SMALL_DUR)
+
+	t0 := time.Now()
+
+	rTimer.duration = LARGE_DUR
+	<-rTimer.out
+	<-rTimer.out
+
+	t1 := time.Now()
+
+	if dur := t1.Sub(t0); dur < LARGE_DUR {
+		t.Errorf("Changing duration failed expected duration over %v, found %v", LARGE_DUR, dur)
+	}
+}
