@@ -475,14 +475,40 @@ func (game *Game) Tick(move Movement) {
 	}
 }
 
+// A value that represents a point in time for a given game. This can
+// be produced by a game, and sent to something else to draw it or
+// something else. It's intentionally a single large value
+type GameSnapshot struct {
+	score      int
+	level      int
+	ticks      int
+	board      Board
+	currentTet Tetromino
+	nextTet    Tetromino
+	position   Position
+}
+
+func (game *Game) Snap() GameSnapshot {
+	return GameSnapshot{
+		score:      game.score,
+		level:      game.level,
+		ticks:      game.ticks,
+		board:      *game.controller.board,
+		currentTet: *game.controller.tet.Tetromino,
+		nextTet:    *game.nextTet,
+		position:   game.controller.tet.Position,
+	}
+}
+
 // Listens for incoming movements on a channel and applies them until
 // the game is over. If called with the debug flag then the timer is
 // disabled and movement is simply free form
-func (game *Game) Listen(moves chan Movement, debug bool) {
+func (game *Game) Listen(moves chan Movement, snaps chan GameSnapshot, debug bool) {
 	if debug {
 		for !game.controller.isGameover {
 			for move := range moves {
 				game.Tick(move)
+				snaps <- game.Snap()
 			}
 		}
 	} else {
@@ -494,6 +520,7 @@ func (game *Game) Listen(moves chan Movement, debug bool) {
 			select {
 			case <-timer.out:
 				game.Tick(MOVE_FORCE_DOWN)
+				snaps <- game.Snap()
 				continue
 			default:
 			}
@@ -508,6 +535,7 @@ func (game *Game) Listen(moves chan Movement, debug bool) {
 			}
 
 			game.Tick(move)
+			snaps <- game.Snap()
 		}
 	}
 }

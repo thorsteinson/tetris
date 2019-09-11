@@ -605,7 +605,15 @@ func TestGameListen(t *testing.T) {
 		}
 	}()
 
-	game.Listen(slamChan, false)
+	snapChan := make(chan GameSnapshot)
+	go func() {
+		for snap := range snapChan {
+			t.Log("Game board:")
+			t.Logf("%v", snap.board)
+		}
+	}()
+
+	game.Listen(slamChan, snapChan, false)
 
 	if !game.controller.isGameover {
 		t.Error("Expected gameover, but game is still active")
