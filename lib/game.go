@@ -441,6 +441,7 @@ func (game *Game) CalcEndBonuses() int {
 
 // Fetches the next tetromino from internal source
 func (game *Game) NextTet() {
+	game.nextTet = <-game.tetSource
 }
 
 // Calculates a score that's meant to be applied between ordinairy non

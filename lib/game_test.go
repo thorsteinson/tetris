@@ -546,3 +546,19 @@ func TestGameClearLines(t *testing.T) {
 		t.Error("Score never went up")
 	}
 }
+
+func TestNextTet(t *testing.T) {
+	game := NewGame(0)
+
+	tet := game.nextTet
+
+	for i := 0; i < 10; i++ {
+		game.NextTet()
+
+		if tet == game.nextTet {
+			t.Error("Next tetromino did not change")
+		}
+
+		tet = game.nextTet
+	}
+}
