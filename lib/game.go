@@ -135,7 +135,7 @@ func NewBoardController(board *Board, tet *Tetromino) *BoardController {
 }
 
 // Returns the number of lines cleared, if any and sets the next
-// tetromino as the one passed
+// tetromino as the one passed.
 func (ctl *BoardController) NextTet(next *Tetromino) int {
 	// This is the value of ctl.tet before it's been set. Need to do a
 	// comparison with this so don't compare against a nil value when
@@ -330,9 +330,11 @@ const (
 // with that given move. The board before and after tick will always
 // be in a consistent sensible state.
 //
-// Returns number of lines cleared between any movement
-func (ctl *BoardController) Tick(move Movement, next *Tetromino) int {
+// Returns number of lines cleared between any movement, and whether
+// the tetromino was consumed
+func (ctl *BoardController) Tick(move Movement, next *Tetromino) (int, bool) {
 	var lines int
+	var consumed bool
 
 	if move <= MOVE_RIGHT {
 		// Movement must be a direction
@@ -350,6 +352,7 @@ func (ctl *BoardController) Tick(move Movement, next *Tetromino) int {
 				// If slam is double tapped, treat it as the user
 				// locking the tile in place, send the next tet over
 				lines = ctl.NextTet(next)
+				consumed = true
 			}
 			ctl.Slam()
 		case MOVE_FORCE_DOWN:
@@ -359,11 +362,12 @@ func (ctl *BoardController) Tick(move Movement, next *Tetromino) int {
 				ctl.Move(DOWN)
 			} else {
 				lines = ctl.NextTet(next)
+				consumed = true
 			}
 		}
 	}
 
-	return lines
+	return lines, consumed
 }
 
 type Game struct {
@@ -454,12 +458,15 @@ func (game *Game) Tick(move Movement) {
 	game.ticks++ // Keeps track of the number of turns
 
 	// Apply move to the board, get the number of lines
-	cleared := game.controller.Tick(move, game.nextTet)
+	cleared, consumed := game.controller.Tick(move, game.nextTet)
+
+	if consumed {
+		game.NextTet()
+	}
 
 	if cleared > 0 {
 		// Tetris must have occurred
 		game.ClearLines(cleared)
-		game.NextTet()
 	} else if !game.controller.isGameover {
 		game.score += game.CalcTickScore()
 	} else {

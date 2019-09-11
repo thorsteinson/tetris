@@ -562,3 +562,34 @@ func TestNextTet(t *testing.T) {
 		tet = game.nextTet
 	}
 }
+
+// Simulates a game where the user does absolutely nothing at all
+func TestGameSimNothing(t *testing.T) {
+	game := NewGame(0)
+
+	for !game.controller.isGameover {
+		game.Tick(MOVE_FORCE_DOWN)
+	}
+}
+
+// Simulates a game with totally random movements
+func TestGameRandom(t *testing.T) {
+	game := NewGame(0)
+
+	var move Movement
+	for !game.controller.isGameover {
+		for i := 0; i < 10; i++ {
+			move = Movement(rand.Intn(int(MOVE_FORCE_DOWN)))
+			game.Tick(move)
+		}
+
+		tet := game.nextTet
+		for tet == game.nextTet {
+			game.Tick(MOVE_FORCE_DOWN)
+		}
+	}
+
+	if game.score < 0 {
+		t.Error("Score is negative somehow")
+	}
+}
