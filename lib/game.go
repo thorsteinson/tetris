@@ -84,10 +84,26 @@ func (tet ActiveTetromino) ListPositions() []Position {
 // without intersecting any tiles in the board, and within the
 // boundaries of the board
 func (tet ActiveTetromino) CanMove(dir Direction, board *Board) bool {
+	currentPos := tet.ListPositions()
 	projectedPos := tet.Move(dir).ListPositions()
 
+	// Test whether a position is in a position that the tetromino is
+	// currently in. It's okay to occupy a future space that' we're
+	// already inside of
+	isInCurrentPos := func(p Position) bool {
+		for _, c := range currentPos {
+			if c == p {
+				return true
+			}
+		}
+
+		return false
+	}
+
 	for _, p := range projectedPos {
-		if p.x < 0 ||
+		if isInCurrentPos(p) {
+			continue
+		} else if p.x < 0 ||
 			p.x >= BOARD_WIDTH ||
 			p.y < 0 ||
 			p.y >= BOARD_HEIGHT ||
