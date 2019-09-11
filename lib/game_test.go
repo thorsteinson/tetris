@@ -508,7 +508,6 @@ func TestBoardForceTick(t *testing.T) {
 	board := &Board{}
 	ctl := NewBoardController(board, NewTet(TET_LINE))
 
-
 	// If we send force down movements, (simulates doing nothing), the
 	// game should eventually end
 	for counter := 0; counter < 200; counter++ {
@@ -517,5 +516,29 @@ func TestBoardForceTick(t *testing.T) {
 
 	if !ctl.isGameover {
 		t.Error("Game should have ended when doing nothing")
+	}
+}
+
+func TestGameClearLines(t *testing.T) {
+	game := NewGame(0)
+
+	if game.linesToNextLvl != LINES_PER_LVL {
+		t.Error("New game has incorrect line counter")
+	}
+
+	game.ClearLines(5)
+
+	if game.linesToNextLvl != LINES_PER_LVL-5 {
+		t.Error("Lines aren't getting subtracted properly from internal counter")
+	}
+
+	game.ClearLines(100)
+
+	if game.linesToNextLvl != LINES_PER_LVL {
+		t.Error("Lines counter didn't reset")
+	}
+
+	if game.level != 2 {
+		t.Error("Level failed to increment")
 	}
 }

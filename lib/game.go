@@ -390,14 +390,13 @@ func TetFactory(seed int64) chan *Tetromino {
 	return tets
 }
 
+const LINES_PER_LVL = 10
+const MAX_LEVEL = 20
+const DURATION_DIFF = 50 * time.Millisecond
+
 // Create a new game with a given random seed, and hook it to some
 // sort of movement channel to get inputs
 func NewGame(seed int64) *Game {
-
-	const LINES_PER_LVL = 10
-	const MAX_LEVEL = 20
-	const DURATION_DIFF = 50 * time.Millisecond
-
 	var next *Tetromino
 
 	tets := TetFactory(seed)
@@ -417,7 +416,12 @@ func NewGame(seed int64) *Game {
 
 // Applies logic for clearing lines. This modifies internal state so
 // that our level is updated and score is modified
-func (game *Game) ClearLines(lines int) {
+func (game *Game) ClearLines(cleared int) {
+	game.linesToNextLvl -= cleared
+	if game.linesToNextLvl < 0 {
+		game.level++
+		game.linesToNextLvl = LINES_PER_LVL
+	}
 }
 
 // Adds values to score based on the level, the number of lines
