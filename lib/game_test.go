@@ -541,4 +541,8 @@ func TestGameClearLines(t *testing.T) {
 	if game.level != 2 {
 		t.Error("Level failed to increment")
 	}
+
+	if game.score <= 0 {
+		t.Error("Score never went up")
+	}
 }

@@ -418,6 +418,8 @@ func NewGame(seed int64) *Game {
 // that our level is updated and score is modified
 func (game *Game) ClearLines(cleared int) {
 	game.linesToNextLvl -= cleared
+	game.score += cleared * game.level
+
 	if game.linesToNextLvl < 0 {
 		game.level++
 		game.linesToNextLvl = LINES_PER_LVL
@@ -427,7 +429,14 @@ func (game *Game) ClearLines(cleared int) {
 // Adds values to score based on the level, the number of lines
 // cleared, the time, etc. Should only be called once for gameover
 func (game *Game) CalcEndBonuses() int {
-	return 0
+	var score int
+
+	score += game.ticks
+	score += game.level * 10
+	if game.level == MAX_LEVEL {
+		score += 1000
+	}
+	return score
 }
 
 // Fetches the next tetromino from internal source
