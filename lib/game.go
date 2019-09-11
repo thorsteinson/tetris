@@ -447,7 +447,7 @@ func (game *Game) NextTet() {
 // Calculates a score that's meant to be applied between ordinairy non
 // tetris ticks. It should only take the level and time into account
 func (game *Game) CalcTickScore() int {
-	return 0
+	return game.ticks * game.level
 }
 
 func (game *Game) Tick(move Movement) {
