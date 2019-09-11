@@ -474,3 +474,40 @@ func (game *Game) Tick(move Movement) {
 		game.score += game.CalcEndBonuses()
 	}
 }
+
+// Listens for incoming movements on a channel and applies them until
+// the game is over. If called with the debug flag then the timer is
+// disabled and movement is simply free form
+func (game *Game) Listen(moves chan Movement, debug bool) {
+	if debug {
+		for !game.controller.isGameover {
+			for move := range moves {
+				game.Tick(move)
+			}
+		}
+	} else {
+		timer := NewResetTimer(DEFAULT_DURATION)
+
+		var move Movement
+		for !game.controller.isGameover {
+
+			select {
+			case <-timer.out:
+				game.Tick(MOVE_FORCE_DOWN)
+				continue
+			default:
+			}
+
+			select {
+			case <-timer.out:
+				move = MOVE_FORCE_DOWN
+			case move = <-moves:
+				if move == MOVE_DOWN || move == MOVE_SLAM {
+					timer.Reset()
+				}
+			}
+
+			game.Tick(move)
+		}
+	}
+}

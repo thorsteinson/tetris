@@ -593,3 +593,21 @@ func TestGameRandom(t *testing.T) {
 		t.Error("Score is negative somehow")
 	}
 }
+
+func TestGameListen(t *testing.T) {
+	game := NewGame(0)
+
+	// A channel that only sends slams, so we finish our game quickly
+	slamChan := make(chan Movement)
+	go func() {
+		for {
+			slamChan <- MOVE_SLAM
+		}
+	}()
+
+	game.Listen(slamChan, false)
+
+	if !game.controller.isGameover {
+		t.Error("Expected gameover, but game is still active")
+	}
+}
