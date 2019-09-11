@@ -106,82 +106,45 @@ const DEFAULT_DURATION = time.Second
 // to the board, and can glue the tetromino to the board as one would
 // expect with tetris.
 type BoardController struct {
-	board       *Board
-	tet         ActiveTetromino
-	tetSource   <-chan *Tetromino
-	lineCounter chan<- int
-	gameover    chan<- struct{}
-	isGameover  bool
-	timer       *ResetTimer
+	board      *Board
+	tet        ActiveTetromino
+	isGameover bool
 }
 
-func NewBoardController(
-	board *Board,
-	source <-chan *Tetromino,
-	lines chan<- int,
-	gameover chan<- struct{},
-	dur time.Duration,
-) *BoardController {
-
-	var timerDur time.Duration
-	// Compare the zero value
-	if dur != timerDur {
-		timerDur = dur
-	} else {
-		timerDur = DEFAULT_DURATION
-	}
-
-	ctl := &BoardController{
-		board:       board,
-		tetSource:   source,
-		lineCounter: lines,
-		gameover:    gameover,
-		timer:       NewResetTimer(timerDur),
-	}
-	ctl.NextTet()
+func NewBoardController(board *Board, tet *Tetromino) *BoardController {
+	ctl := &BoardController{board: board}
+	ctl.NextTet(tet)
 
 	return ctl
 }
 
-// Recieves next tetromino from channel, and changes the active
-// tetromino to the next one received. This implicitly locks the tiles
-// of whatever the previous tetromino was and alters the state of the
-// board by applying tetris
-func (ctl *BoardController) NextTet() {
+// Returns the number of lines cleared, if any and sets the next
+// tetromino as the one passed
+func (ctl *BoardController) NextTet(next *Tetromino) int {
 	// This is the value of ctl.tet before it's been set. Need to do a
 	// comparison with this so don't compare against a nil value when
 	// checking the gameover line
 	initTet := ActiveTetromino{}
+	lines := ctl.board.Tetris()
 
-	if lines := ctl.board.Tetris(); lines > 0 {
-		ctl.lineCounter <- lines
-	} else if ctl.tet != initTet {
+	if lines == 0 && ctl.tet != initTet {
 		// Check for whether they are on the gameover line
 		for _, p := range ctl.tet.ListPositions() {
 			if p.y == GAMEOVER_LINE {
-				var gameoverSignal struct{}
-				ctl.gameover <- gameoverSignal
-				close(ctl.gameover)
-
 				ctl.isGameover = true
-				return
+				return 0
 			}
 		}
 	}
 
 	// NewActiveTet will handle setting the default position
-	ctl.tet = NewActiveTet(<-ctl.tetSource)
+	ctl.tet = NewActiveTet(next)
 
-	// Check for a collision, and send the gameover signal if one is
-	// detected.
+	// Do a quick gameover check
 	for _, p := range ctl.tet.ListPositions() {
 		if !ctl.board.IsEmpty(p.x, p.y) {
-			var gameoverSignal struct{}
-			ctl.gameover <- gameoverSignal
-			close(ctl.gameover)
-
 			ctl.isGameover = true
-			return
+			return 0
 		}
 	}
 
@@ -189,6 +152,8 @@ func (ctl *BoardController) NextTet() {
 	for _, p := range ctl.tet.ListPositions() {
 		ctl.board.SetTile(ShapeToTC(ctl.tet.shape), p.x, p.y)
 	}
+
+	return lines
 }
 
 // This is a helper function that let's us pass a function, and
@@ -342,168 +307,133 @@ const (
 	MOVE_SLAM
 	MOVE_ROTATE_LEFT
 	MOVE_ROTATE_RIGHT
+	MOVE_FORCE_DOWN
 )
 
-// The Listen method connects to a movement channel which provides an
-// input movement for the tetromino and moves it around. This could be
-// as simple as a list of dedicated movements, or it could be tied to
-// a real world input source to get interactive movement.
+// Tick will apply some sort of move and atomically update the board
+// with that given move. The board before and after tick will always
+// be in a consistent sensible state.
 //
-// There's a 2nd channel provided which is meant for locking the peice
-// in place and triggering the next tetromino. In a normal game this
-// can be constructed from a ticker that forces the tetromino to move
-// down at a regular rate.
-//
-// This function will block until the game finishes. It will return
-// immediately after the gameover signal has been fired
-func (ctl *BoardController) Listen(moves <-chan Movement) {
-	var dir Direction
+// Returns number of lines cleared between any movement
+func (ctl *BoardController) Tick(move Movement, next *Tetromino) int {
+	var lines int
 
-	down := func() {
-		if !ctl.tet.CanMove(DOWN, ctl.board) {
-			ctl.NextTet()
-		} else {
-			ctl.Move(DOWN)
-		}
-	}
-
-	// Repeat this loop until the game finishes
-	for !ctl.isGameover {
-
-		// Prioritized selection. We always want to ensure that the
-		// timer is the event we respond to if we have to choose, so
-		// we use 2 select statements. The first checks for the timer
-		// alone, meaning it will succeed if present. Then we fallback
-		// to the more general case where we go for both.
-		select {
-		case <-ctl.timer.out:
-			down()
-			continue
-		default:
-		}
-
-		select {
-		case <-ctl.timer.out:
-			down()
-
-		case move := <-moves:
-			if move <= MOVE_RIGHT {
-				dir = Direction(move)
-				if dir == DOWN && ctl.tet.CanMove(DOWN, ctl.board) {
-					// A downwards movement should reset our
-					// timer. But only if we're not already blocked.
-					ctl.timer.Reset()
-				}
-				ctl.Move(dir)
+	if move <= MOVE_RIGHT {
+		// Movement must be a direction
+		ctl.Move(Direction(move))
+	} else {
+		switch move {
+		case MOVE_ROTATE_LEFT:
+			ctl.RotLeft()
+		case MOVE_ROTATE_RIGHT:
+			ctl.RotRight()
+		case MOVE_SLAM:
+			if ctl.tet.CanMove(DOWN, ctl.board) {
+				ctl.Slam()
 			} else {
-				switch move {
-				case MOVE_SLAM:
-					ctl.Slam()
-
-					ctl.timer.Reset()
-
-				case MOVE_ROTATE_LEFT:
-					ctl.RotLeft()
-				case MOVE_ROTATE_RIGHT:
-					ctl.RotRight()
-				}
+				// If slam is double tapped, treat it as the user
+				// locking the tile in place, send the next tet over
+				lines = ctl.NextTet(next)
+			}
+			ctl.Slam()
+		case MOVE_FORCE_DOWN:
+			// This doesn't come from user input, but from a timer. It
+			// can potentially trigger next tet if it's at the bottom
+			if ctl.tet.CanMove(DOWN, ctl.board) {
+				ctl.Move(DOWN)
+			} else {
+				lines = ctl.NextTet(next)
 			}
 		}
-
 	}
+
+	return lines
 }
 
 type Game struct {
 	// Keeps track of number of lines that have been cleared
 	lines          int
 	score          int
-	controller     *BoardController
 	level          int
+	ticks          int
+	controller     *BoardController
 	nextTet        *Tetromino
-	moves          <-chan Movement
 	linesToNextLvl int
+	tetSource      chan *Tetromino
+}
+
+func TetFactory(seed int64) chan *Tetromino {
+	tets := make(chan *Tetromino)
+
+	go func() {
+		for shape := range ShapeGenerator(seed) {
+			tets <- NewTet(shape)
+		}
+	}()
+
+	return tets
 }
 
 // Create a new game with a given random seed, and hook it to some
 // sort of movement channel to get inputs
-func NewGame(seed int64, moves <-chan Movement) *Game {
+func NewGame(seed int64) *Game {
 
 	const LINES_PER_LVL = 10
 	const MAX_LEVEL = 20
 	const DURATION_DIFF = 50 * time.Millisecond
 
-	// 	board *Board,
-	// 	source <-chan *Tetromino,
-	// 	lines chan<- int,
-	// 	gameover chan<- struct{},
-	// 	dur time.Duration,
-
 	var next *Tetromino
 
-	// Create infinite stream of tetrominos
-	tets := make(chan *Tetromino)
-	go func() {
-		for s := range ShapeGenerator(seed) {
-			nextTet := NewTet(s)
-			// Update the pointer, so it points to the value that will
-			// be next be consumed when the board calls NextTet(),
-			// this gives us our preview
-			next = nextTet
-			// Push the value to the channel
-			tets <- nextTet
-		}
-	}()
-
-	lineC := make(chan int)
-
-	gameoverC := make(chan struct{})
+	tets := TetFactory(seed)
+	firstTet := <-tets
+	next = <-tets
 
 	game := &Game{
-		controller: NewBoardController(
-			&Board{},
-			tets,
-			lineC,
-			gameoverC,
-			0,
-		),
-		score:          0,
+		controller:     NewBoardController(&Board{}, firstTet),
 		level:          1,
 		linesToNextLvl: LINES_PER_LVL,
 		nextTet:        next,
+		tetSource:      tets,
 	}
-
-	// Increase line counter as it updates, and modify level if we
-	// reach a threshold
-	go func() {
-		for cleared := range lineC {
-			game.score += 100 * cleared
-
-			game.lines += cleared
-			game.linesToNextLvl -= cleared
-			if game.linesToNextLvl < 0 {
-				// increment the lvl
-				if game.level < MAX_LEVEL {
-					game.level++
-
-					// Modify the speed of the game, decrease duration
-					// between turns thus speeding it up.
-					game.controller.timer.duration -= DURATION_DIFF
-				}
-
-				// Reset level counter
-				game.linesToNextLvl = LINES_PER_LVL
-
-				// Apply score bonus
-				game.score += game.level * 1000
-
-			}
-		}
-	}()
 
 	return game
 }
 
-// Runs a game to completion
-func (game *Game) Run() {
-	game.controller.Listen(game.moves)
+// Applies logic for clearing lines. This modifies internal state so
+// that our level is updated and score is modified
+func (game *Game) ClearLines(lines int) {
+}
+
+// Adds values to score based on the level, the number of lines
+// cleared, the time, etc. Should only be called once for gameover
+func (game *Game) CalcEndBonuses() int {
+	return 0
+}
+
+// Fetches the next tetromino from internal source
+func (game *Game) NextTet() {
+}
+
+// Calculates a score that's meant to be applied between ordinairy non
+// tetris ticks. It should only take the level and time into account
+func (game *Game) CalcTickScore() int {
+	return 0
+}
+
+func (game *Game) Tick(move Movement) {
+	game.ticks++ // Keeps track of the number of turns
+
+	// Apply move to the board, get the number of lines
+	cleared := game.controller.Tick(move, game.nextTet)
+
+	if cleared > 0 {
+		// Tetris must have occurred
+		game.ClearLines(cleared)
+		game.NextTet()
+	} else if !game.controller.isGameover {
+		game.score += game.CalcTickScore()
+	} else {
+		// Game is over
+		game.score += game.CalcEndBonuses()
+	}
 }
