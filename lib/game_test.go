@@ -503,3 +503,19 @@ func TestNaturalGameover(t *testing.T) {
 		t.Error("No gameover detected")
 	}
 }
+
+func TestBoardForceTick(t *testing.T) {
+	board := &Board{}
+	ctl := NewBoardController(board, NewTet(TET_LINE))
+
+
+	// If we send force down movements, (simulates doing nothing), the
+	// game should eventually end
+	for counter := 0; counter < 200; counter++ {
+		ctl.Tick(MOVE_FORCE_DOWN, NewTet(TET_LINE))
+	}
+
+	if !ctl.isGameover {
+		t.Error("Game should have ended when doing nothing")
+	}
+}
