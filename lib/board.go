@@ -1,5 +1,10 @@
 package lib
 
+import (
+	"fmt"
+	"strings"
+)
+
 const (
 	BOARD_WIDTH  = 10
 	BOARD_HEIGHT = 40
@@ -117,4 +122,55 @@ func (b *Board) FullLines() []int {
 
 func (b *Board) IsEmpty(x, y int) bool {
 	return b.GetTile(x, y) == EMPTY
+}
+
+// Draw a literal grid that then contains the number representing the
+// tile. If it's empty, leave it blank as a space.
+func (b *Board) String() string {
+	topLine := "┌─┬─┬─┬─┬─┬─┬─┬─┬─┬─┐"
+	midLine := "├─┼─┼─┼─┼─┼─┼─┼─┼─┼─┤"
+	botLine := "└─┴─┴─┴─┴─┴─┴─┴─┴─┴─┘"
+
+	builder := &strings.Builder{}
+	builder.WriteRune('\n')
+	builder.WriteString(topLine)
+	builder.WriteRune('\n')
+
+	var tile TileColor
+	var tileStr string
+	var lineBuilder *strings.Builder
+
+	// Start several lines down, since the top portion of the board is
+	// really obscured
+	for i := 16; i < BOARD_HEIGHT; i++ {
+
+		lineBuilder = &strings.Builder{}
+		lineBuilder.WriteRune('│')
+
+		for j := 0; j < BOARD_WIDTH; j++ {
+
+			tile = b.tiles[i*BOARD_WIDTH+j]
+
+			if tile != EMPTY {
+				tileStr = fmt.Sprintf("%v", tile)
+			} else if i == BOARD_HEIGHT-GAMEOVER_LINE-1 {
+				tileStr = "▒"
+			} else {
+				tileStr = " "
+			}
+
+			lineBuilder.WriteString(tileStr + "│")
+		}
+		builder.WriteString(lineBuilder.String())
+		builder.WriteRune('\n')
+
+		// Print all but last line
+		if i != BOARD_HEIGHT-1 {
+			builder.WriteString(midLine)
+			builder.WriteRune('\n')
+		}
+	}
+	builder.WriteString(botLine)
+
+	return builder.String()
 }
