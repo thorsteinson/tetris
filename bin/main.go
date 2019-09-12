@@ -28,5 +28,5 @@ func main() {
 		}
 	}()
 
-	game.Listen(evtMgr.C, snaps, *debug)
+	game.Play(evtMgr.C, snaps, *debug)
 }

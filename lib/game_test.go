@@ -613,7 +613,7 @@ func TestGameListen(t *testing.T) {
 		}
 	}()
 
-	game.Listen(slamChan, snapChan, false)
+	game.Play(slamChan, snapChan, false)
 
 	if !game.controller.isGameover {
 		t.Error("Expected gameover, but game is still active")
