@@ -503,7 +503,7 @@ func (game *Game) Snap() GameSnapshot {
 // Listens for incoming movements on a channel and applies them until
 // the game is over. If called with the debug flag then the timer is
 // disabled and movement is simply free form
-func (game *Game) Listen(moves chan Movement, snaps chan GameSnapshot, debug bool) {
+func (game *Game) Listen(moves <-chan Movement, snaps chan<- GameSnapshot, debug bool) {
 	if debug {
 		for !game.controller.isGameover {
 			for move := range moves {
