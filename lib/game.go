@@ -190,6 +190,13 @@ func (ctl *BoardController) updateTiles(callback func() ActiveTetromino) {
 	}
 }
 
+// Helper method that conveniently checks whether a tile can move
+// down. Need to check this at the game level, so this method helps
+// clear that logic up a bit.
+func (ctl *BoardController) CanMoveDown() bool {
+	return ctl.tet.CanMove(DOWN, ctl.board)
+}
+
 // Move will idempotently move the active tetris piece. If it can't be
 // moved, then it won't be moved.
 func (ctl *BoardController) Move(dir Direction) {
@@ -519,7 +526,7 @@ func (game *Game) Listen(moves <-chan Movement, snaps chan<- GameSnapshot, debug
 			// Update the timer duration, this will progressively
 			// speed the game up to a minimum of 50ms between moves at
 			// lvl 20
-			timer.duration = DEFAULT_DURATION - DURATION_DIFF * time.Duration(game.level)
+			timer.duration = DEFAULT_DURATION - DURATION_DIFF*time.Duration(game.level)
 
 			select {
 			case <-timer.out:
@@ -533,7 +540,7 @@ func (game *Game) Listen(moves <-chan Movement, snaps chan<- GameSnapshot, debug
 			case <-timer.out:
 				move = MOVE_FORCE_DOWN
 			case move = <-moves:
-				if move == MOVE_DOWN || move == MOVE_SLAM {
+				if game.controller.CanMoveDown() && move == MOVE_DOWN || move == MOVE_SLAM {
 					timer.Reset()
 				}
 			}
