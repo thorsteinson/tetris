@@ -516,6 +516,10 @@ func (game *Game) Listen(moves <-chan Movement, snaps chan<- GameSnapshot, debug
 
 		var move Movement
 		for !game.controller.isGameover {
+			// Update the timer duration, this will progressively
+			// speed the game up to a minimum of 50ms between moves at
+			// lvl 20
+			timer.duration = DEFAULT_DURATION - DURATION_DIFF * time.Duration(game.level)
 
 			select {
 			case <-timer.out:
@@ -536,6 +540,7 @@ func (game *Game) Listen(moves <-chan Movement, snaps chan<- GameSnapshot, debug
 
 			game.Tick(move)
 			snaps <- game.Snap()
+
 		}
 	}
 }
