@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"log"
+	"time"
 
+	"tetris/lib"
 	"tetris/sdl"
 )
 
@@ -17,7 +19,14 @@ func main() {
 
 	evtMgr, _ := sdl.Init(*debug)
 
-	for e := range evtMgr.C {
-		log.Print("New Event:", e)
-	}
+	game := lib.NewGame(time.Now().UnixNano())
+
+	snaps := make(chan lib.GameSnapshot)
+	go func() {
+		for snap := range snaps {
+			log.Print(snap.Position)
+		}
+	}()
+
+	game.Listen(evtMgr.C, snaps, *debug)
 }
