@@ -609,7 +609,7 @@ func TestGameListen(t *testing.T) {
 	go func() {
 		for snap := range snapChan {
 			t.Log("Game board:")
-			t.Logf("%v", &snap.board)
+			t.Logf("%v", &snap.Board)
 		}
 	}()
 

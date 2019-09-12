@@ -479,24 +479,24 @@ func (game *Game) Tick(move Movement) {
 // be produced by a game, and sent to something else to draw it or
 // something else. It's intentionally a single large value
 type GameSnapshot struct {
-	score      int
-	level      int
-	ticks      int
-	board      Board
-	currentTet Tetromino
-	nextTet    Tetromino
-	position   Position
+	Score      int
+	Level      int
+	Ticks      int
+	Board      Board
+	CurrentTet Tetromino
+	NextTet    Tetromino
+	Position   Position
 }
 
 func (game *Game) Snap() GameSnapshot {
 	return GameSnapshot{
-		score:      game.score,
-		level:      game.level,
-		ticks:      game.ticks,
-		board:      *game.controller.board,
-		currentTet: *game.controller.tet.Tetromino,
-		nextTet:    *game.nextTet,
-		position:   game.controller.tet.Position,
+		Score:      game.score,
+		Level:      game.level,
+		Ticks:      game.ticks,
+		Board:      *game.controller.board,
+		CurrentTet: *game.controller.tet.Tetromino,
+		NextTet:    *game.nextTet,
+		Position:   game.controller.tet.Position,
 	}
 }
 
