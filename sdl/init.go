@@ -2,6 +2,9 @@ package sdl
 
 import (
 	gosdl "github.com/veandco/go-sdl2/sdl"
+
+	"log"
+	"os"
 )
 
 // Initializes SDL and starts everything related to it. This must be
@@ -21,10 +24,13 @@ func Init(debug bool) (*EventMgr, *DisplayMgr) {
 		for event := gosdl.WaitEvent(); true; event = gosdl.WaitEvent() {
 			switch event.(type) {
 			case *gosdl.QuitEvent:
+				log.Print("Quit Event Received, exiting...")
 				gosdl.Quit()
-			}
+				os.Exit(0)
 
-			eventChan <- event
+			default:
+				eventChan <- event
+			}
 		}
 	}()
 
