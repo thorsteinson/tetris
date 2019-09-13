@@ -13,8 +13,8 @@ type Palette [7]color.RGBA
 
 func LookupColor(tc lib.TileColor, p Palette) color.RGBA {
 	if tc == lib.EMPTY {
-		// Literally just a transparent pixel
-		return color.RGBA{0, 0, 0, 0}
+		// Pure black
+		return color.RGBA{0, 0, 0, 255}
 	}
 
 	// Since the empty color has no actual color, shift every number
@@ -67,7 +67,7 @@ func FillRect(surf *gosdl.Surface, rect gosdl.Rect, color color.RGBA) {
 // Clears the specified surface, by setting everything to the
 // transparent color
 func ClearSurface(surf *gosdl.Surface) {
-	fillColor := color.RGBA{0, 0, 0, 0}
+	fillColor := color.RGBA{255, 255, 255, 255}
 	r := Rect(0, 0, int(surf.W), int(surf.H))
 	FillRect(surf, r, fillColor)
 }
@@ -131,20 +131,15 @@ func (bc *BoardComponent) Draw() {
 		for x := 0; x < 10; x++ {
 			tc = bc.board.GetTile(x, y)
 			rect = Rect(xOff+x*rectSize, yOff+(20-y-1)*rectSize, rectSize, rectSize)
-			if tc != lib.EMPTY {
-				FillRect(bc.surf, rect, LookupColor(tc, bc.palette))
-			} else {
-				FillRect(bc.surf, rect, color.RGBA{0, 0, 0, 255})
-			}
+			FillRect(bc.surf, rect, LookupColor(tc, bc.palette))
 		}
 	}
 }
 
 func (bc *BoardComponent) Update(snap lib.GameSnapshot) {
-	ClearSurface(bc.surf)
-
 	b := snap.Board
 	if b != bc.board {
+		ClearSurface(bc.surf)
 		bc.board = b
 		bc.Draw()
 	}

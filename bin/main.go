@@ -33,7 +33,7 @@ func main() {
 		color.RGBA{214, 57, 60, 255},
 	}
 
-	boardComp := sdl.NewBoardComponent(initState.Board, palette, 500, 500)
+	boardComp := sdl.NewBoardComponent(initState.Board, palette, 800, 600)
 
 	disMgr.Add(boardComp)
 
