@@ -487,7 +487,7 @@ func TestNaturalGameover(t *testing.T) {
 	board := &Board{}
 	ctl := NewBoardController(board, NewTet(TET_LINE))
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 4; i++ {
 		ctl.Slam()
 		ctl.NextTet(NewTet(TET_LINE))
 		if ctl.isGameover {

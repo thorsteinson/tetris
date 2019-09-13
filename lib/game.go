@@ -24,7 +24,7 @@ const (
 )
 
 const STARTING_X = 4
-const STARTING_Y = 23
+const STARTING_Y = 21
 
 const GAMEOVER_LINE = 20
 
