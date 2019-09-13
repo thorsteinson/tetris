@@ -15,6 +15,7 @@ var debugInputMap map[gosdl.Keycode]lib.Movement
 func init() {
 	defaultInputMap = map[gosdl.Keycode]lib.Movement{
 		gosdl.K_DOWN:  lib.MOVE_DOWN,
+		gosdl.K_UP:    lib.MOVE_ROTATE_LEFT,
 		gosdl.K_LEFT:  lib.MOVE_LEFT,
 		gosdl.K_RIGHT: lib.MOVE_RIGHT,
 		gosdl.K_a:     lib.MOVE_ROTATE_LEFT,
