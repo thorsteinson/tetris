@@ -44,5 +44,15 @@ func Init(debug bool) (*EventMgr, *DisplayMgr) {
 	}
 	pxFormat = format
 
+	if !debug {
+		// Load the theme song
+		audioMgr := &AudioMgr{}
+		audioMgr.Init()
+		err := audioMgr.Loop(SONG_PATH)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	return NewEventMgr(eventChan, debug), NewDisplayMgr("Tetris", DEFAULT_XRES, DEFAULT_YRES)
 }
