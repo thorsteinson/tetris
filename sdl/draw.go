@@ -132,7 +132,7 @@ func (bc *BoardComponent) Draw() {
 			tc = bc.board.GetTile(x, y)
 			rect = Rect(xOff+x*rectSize, yOff+(20-y-1)*rectSize, rectSize, rectSize)
 			if tc != lib.EMPTY {
-				FillRect(bc.surf, rect, bc.palette[tc])
+				FillRect(bc.surf, rect, LookupColor(tc, bc.palette))
 			} else {
 				FillRect(bc.surf, rect, color.RGBA{0, 0, 0, 255})
 			}
