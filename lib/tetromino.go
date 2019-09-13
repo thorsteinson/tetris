@@ -137,12 +137,11 @@ func init() {
 	for _, grid := range grids {
 		rotationSet := []*[]bool{}
 
-		var rotation []bool = grid.grid
-		rotationSet = append(rotationSet, &rotation)
-
-		for i := 0; i < 3; i++ {
-			rotation := pivot(rotation, grid.size)
-			rotationSet = append(rotationSet, &rotation)
+		var r0 []bool = grid.grid
+		for i := 0; i < 4; i++ {
+			r1 := pivot(r0, grid.size)
+			rotationSet = append(rotationSet, &r1)
+			r0 = r1
 		}
 
 		rotations = append(rotations, rotationSet)

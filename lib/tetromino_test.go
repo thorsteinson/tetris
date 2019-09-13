@@ -44,6 +44,36 @@ func TestTetRotation(t *testing.T) {
 			t.Errorf("Sahpe %v has different expected mask versus actual mask", s)
 		}
 	}
+
+	// Just test rotating a line, since each rotatin is unique
+	tet := NewTet(TET_LINE)
+	m0 := *tet.mask
+	tet.RotLeft()
+	m1 := *tet.mask
+	tet.RotLeft()
+	m2 := *tet.mask
+	tet.RotLeft()
+	m3 := *tet.mask
+
+	type maskPair struct {
+		m0 []bool
+		m1 []bool
+	}
+
+	pairs := []maskPair{
+		{m0, m1},
+		{m0, m2},
+		{m0, m3},
+		{m1, m2},
+		{m1, m3},
+		{m2, m3},
+	}
+
+	for i := range pairs {
+		if reflect.DeepEqual(pairs[i].m0, pairs[i].m1) {
+			t.Error("Found identical masks even though they should be unique!")
+		}
+	}
 }
 
 func TestShapeGeneration(t *testing.T) {
