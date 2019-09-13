@@ -20,7 +20,7 @@ func (mgr *AudioMgr) Init() {
 	}
 
 	// Set the volume way down, so our ears aren't blasted
-	mix.Volume(-1, 5)
+	mix.VolumeMusic(20)
 }
 
 func (mgr *AudioMgr) Loop(filepath string) error {
