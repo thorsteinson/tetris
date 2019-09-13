@@ -361,7 +361,6 @@ func (ctl *BoardController) Tick(move Movement, next *Tetromino) (int, bool) {
 				lines = ctl.NextTet(next)
 				consumed = true
 			}
-			ctl.Slam()
 		case MOVE_FORCE_DOWN:
 			// This doesn't come from user input, but from a timer. It
 			// can potentially trigger next tet if it's at the bottom
