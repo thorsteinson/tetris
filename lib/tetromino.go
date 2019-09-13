@@ -232,13 +232,32 @@ func ShapeToTC(s Shape) TileColor {
 func ShapeGenerator(seed int64) <-chan Shape {
 	r := rand.New(rand.NewSource(seed))
 
-	shapes := make(chan Shape, 20)
+	shapeC := make(chan Shape, 20)
+	var upcomingShapes []Shape
+	for _,s := range shapes {
+		upcomingShapes = append(upcomingShapes, s)
+	}
+
+	shuffle := func() {
+		r.Shuffle(len(upcomingShapes), func(i, j int) {
+			upcomingShapes[i], upcomingShapes[j] = upcomingShapes[j], upcomingShapes[i]
+		})
+	}
+
+	shuffle()
 
 	go func() {
+		var idx int
 		for {
-			shapes <- Shape(r.Intn(int(maxShape)))
+			if idx < 7 {
+				shapeC <- upcomingShapes[idx]
+				idx++
+			} else {
+				shuffle()
+				idx = 0
+			}
 		}
 	}()
 
-	return shapes
+	return shapeC
 }
