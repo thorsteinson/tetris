@@ -36,6 +36,7 @@ func main() {
 	boardComp := sdl.NewBoardComponent(initState.Board, palette, 800, 600)
 
 	disMgr.Add(boardComp)
+	disMgr.AddSurf(sdl.MakeGrid(800, 600))
 
 	snaps := make(chan lib.GameSnapshot)
 

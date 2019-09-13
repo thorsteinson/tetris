@@ -44,6 +44,10 @@ func (mgr *DisplayMgr) Add(comp Component) {
 	mgr.components = append(mgr.components, comp)
 }
 
+func (mgr *DisplayMgr) AddSurf(s *gosdl.Surface) {
+	mgr.surfaces = append(mgr.surfaces, s)
+}
+
 // Renders visuals to the screen
 func (mgr *DisplayMgr) Render(snapshots chan lib.GameSnapshot) {
 	for snap := range snapshots {

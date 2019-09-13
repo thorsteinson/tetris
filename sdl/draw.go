@@ -86,10 +86,10 @@ type BoardComponent struct {
 	h       int
 }
 
-func NewBoardComponent(initBoard lib.Board, p Palette, w int, h int) *BoardComponent {
-	const W_MIN = 50
-	const H_MIN = 100
+const W_MIN = 50
+const H_MIN = 100
 
+func NewBoardComponent(initBoard lib.Board, p Palette, w int, h int) *BoardComponent {
 	if w < W_MIN || h < H_MIN {
 		panic("Cannot create board component that small. Minimum supported size is 50x100")
 	}
@@ -143,4 +143,48 @@ func (bc *BoardComponent) Update(snap lib.GameSnapshot) {
 		bc.board = b
 		bc.Draw()
 	}
+}
+
+// Creates a grid that is meant to be directly overlayed on top of a
+// board, so it's more apparent how the tetrominos are layed out. This
+// is a static component, so the surface is returned directly
+func MakeGrid(w, h int) *gosdl.Surface {
+	if w < W_MIN || h < H_MIN {
+		panic("Cannot create a grid of provided size. Minumum supported size is 50x100")
+	}
+
+	surf := NewSurface(w, h)
+
+	var lineSize int
+	if h/w >= 2 {
+		lineSize = w / 10
+	} else {
+		lineSize = h / 20
+	}
+
+	realW := lineSize * 10
+	realH := lineSize * 20
+
+	xOff := (w - realW) / 2
+	yOff := (h - realH) / 2
+
+	LINE_COLOR := color.RGBA{200, 200, 200, 200}
+
+	var line gosdl.Rect
+	// Draw horizonal lines
+	for y := 0; y < 20; y++ {
+		line = Rect(xOff, yOff+y*lineSize, realW, 1)
+		FillRect(surf, line, LINE_COLOR)
+	}
+	line = Rect(xOff, yOff+20*lineSize-1, realW, 1)
+	FillRect(surf, line, LINE_COLOR)
+	// Draw vertical lines
+	for x := 0; x < 10; x++ {
+		line = Rect(xOff+x*lineSize, yOff, 1, realH)
+		FillRect(surf, line, LINE_COLOR)
+	}
+	line = Rect(xOff+10*lineSize-1, yOff, 1, realH)
+	FillRect(surf, line, LINE_COLOR)
+
+	return surf
 }
