@@ -138,6 +138,7 @@ func init() {
 		rotationSet := []*[]bool{}
 
 		var r0 []bool = grid.grid
+		rotationSet = append(rotationSet, &r0)
 		for i := 0; i < 4; i++ {
 			r1 := pivot(r0, grid.size)
 			rotationSet = append(rotationSet, &r1)
