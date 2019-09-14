@@ -522,28 +522,20 @@ func TestBoardForceTick(t *testing.T) {
 func TestGameClearLines(t *testing.T) {
 	game := NewGame(0)
 
-	if game.linesToNextLvl != LINES_PER_LVL {
-		t.Error("New game has incorrect line counter")
+	if game.Level() != 1 {
+		t.Error("Default level is incorrect")
 	}
 
 	game.ClearLines(5)
 
-	if game.linesToNextLvl != LINES_PER_LVL-5 {
-		t.Error("Lines aren't getting subtracted properly from internal counter")
+	if game.lines != 5 {
+		t.Error("Lines aren't getting properly added")
 	}
 
 	game.ClearLines(100)
 
-	if game.linesToNextLvl != LINES_PER_LVL {
-		t.Error("Lines counter didn't reset")
-	}
-
-	if game.level != 2 {
-		t.Error("Level failed to increment")
-	}
-
-	if game.score <= 0 {
-		t.Error("Score never went up")
+	if game.Level() != MAX_LEVEL {
+		t.Error("Max level wasn't reached")
 	}
 }
 

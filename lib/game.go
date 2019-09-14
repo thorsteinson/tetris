@@ -378,14 +378,12 @@ func (ctl *BoardController) Tick(move Movement, next *Tetromino) (int, bool) {
 
 type Game struct {
 	// Keeps track of number of lines that have been cleared
-	lines          int
-	score          int
-	level          int
-	ticks          int
-	controller     *BoardController
-	nextTet        *Tetromino
-	linesToNextLvl int
-	tetSource      chan *Tetromino
+	lines      int
+	score      int
+	ticks      int
+	controller *BoardController
+	nextTet    *Tetromino
+	tetSource  chan *Tetromino
 }
 
 func TetFactory(seed int64) chan *Tetromino {
@@ -400,7 +398,7 @@ func TetFactory(seed int64) chan *Tetromino {
 	return tets
 }
 
-const LINES_PER_LVL = 10
+const LINES_PER_LVL = 4
 const MAX_LEVEL = 20
 const DURATION_DIFF = 50 * time.Millisecond
 
@@ -414,26 +412,25 @@ func NewGame(seed int64) *Game {
 	next = <-tets
 
 	game := &Game{
-		controller:     NewBoardController(&Board{}, firstTet),
-		level:          1,
-		linesToNextLvl: LINES_PER_LVL,
-		nextTet:        next,
-		tetSource:      tets,
+		controller: NewBoardController(&Board{}, firstTet),
+		nextTet:    next,
+		tetSource:  tets,
 	}
 
 	return game
 }
 
-// Applies logic for clearing lines. This modifies internal state so
-// that our level is updated and score is modified
-func (game *Game) ClearLines(cleared int) {
-	game.linesToNextLvl -= cleared
-	game.score += cleared * game.level
-
-	if game.linesToNextLvl < 0 {
-		game.level++
-		game.linesToNextLvl = LINES_PER_LVL
+func (game *Game) Level() int {
+	var lvl = (game.lines / LINES_PER_LVL) + 1
+	if lvl > MAX_LEVEL {
+		return MAX_LEVEL
 	}
+	return lvl
+}
+
+// Applies logic for clearing lines
+func (game *Game) ClearLines(cleared int) {
+	game.lines += cleared
 }
 
 // Adds values to score based on the level, the number of lines
@@ -442,8 +439,8 @@ func (game *Game) CalcEndBonuses() int {
 	var score int
 
 	score += game.ticks
-	score += game.level * 10
-	if game.level == MAX_LEVEL {
+	score += game.Level() * 10
+	if game.Level() == MAX_LEVEL {
 		score += 1000
 	}
 	return score
@@ -457,7 +454,7 @@ func (game *Game) NextTet() {
 // Calculates a score that's meant to be applied between ordinairy non
 // tetris ticks. It should only take the level and time into account
 func (game *Game) CalcTickScore() int {
-	return game.ticks * game.level
+	return game.ticks * game.Level()
 }
 
 func (game *Game) Tick(move Movement) {
@@ -497,7 +494,7 @@ type GameSnapshot struct {
 func (game *Game) Snap() GameSnapshot {
 	return GameSnapshot{
 		Score:      game.score,
-		Level:      game.level,
+		Level:      game.Level(),
 		Ticks:      game.ticks,
 		Board:      *game.controller.board,
 		CurrentTet: *game.controller.tet.Tetromino,
@@ -525,7 +522,7 @@ func (game *Game) Play(moves <-chan Movement, snaps chan<- GameSnapshot, debug b
 			// Update the timer duration, this will progressively
 			// speed the game up to a minimum of 50ms between moves at
 			// lvl 20
-			timer.duration = DEFAULT_DURATION - DURATION_DIFF*time.Duration(game.level)
+			timer.duration = DEFAULT_DURATION - DURATION_DIFF*time.Duration(game.Level())
 
 			select {
 			case <-timer.out:
