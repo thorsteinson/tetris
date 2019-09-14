@@ -401,7 +401,7 @@ func TetFactory(seed int64) chan *Tetromino {
 
 const LINES_PER_LVL = 4
 const MAX_LEVEL = 20
-const DURATION_DIFF = 50 * time.Millisecond
+const DURATION_DIFF = 45 * time.Millisecond
 
 // Create a new game with a given random seed, and hook it to some
 // sort of movement channel to get inputs
