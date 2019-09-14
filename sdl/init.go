@@ -15,9 +15,7 @@ var pxFormat *gosdl.PixelFormat
 // called before other managers are initialized, since they rely on
 // the functionality here. Also listens for the quit event and exits
 // if we attempt to close the window
-func Init(debug bool) (*EventMgr, *DisplayMgr) {
-	const DEFAULT_XRES = 800
-	const DEFAULT_YRES = 600
+func Init(xres, yres int, debug bool) (*EventMgr, *DisplayMgr) {
 	if err := gosdl.Init(gosdl.INIT_EVERYTHING); err != nil {
 		panic(err)
 	}
@@ -54,5 +52,5 @@ func Init(debug bool) (*EventMgr, *DisplayMgr) {
 		}
 	}
 
-	return NewEventMgr(eventChan, debug), NewDisplayMgr("Tetris", DEFAULT_XRES, DEFAULT_YRES)
+	return NewEventMgr(eventChan, debug), NewDisplayMgr("Tetris", xres, yres)
 }

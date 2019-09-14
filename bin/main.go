@@ -13,13 +13,15 @@ import (
 func main() {
 	debug := flag.Bool("debug", false, "Disable timer and allow free movement")
 	level := flag.Int("level", 1, "Starting level (1-20)")
+	x := flag.Int("x", 550, "X resolution")
+	y := flag.Int("y", 1000, "Y resolution")
 	flag.Parse()
 
 	if *debug {
 		log.Print("Debugging enabled")
 	}
 
-	evtMgr, disMgr := sdl.Init(*debug)
+	evtMgr, disMgr := sdl.Init(*x, *y, *debug)
 
 	game := lib.NewGame(time.Now().UnixNano(), *level)
 	initState := game.Snap()
@@ -34,10 +36,10 @@ func main() {
 		color.RGBA{214, 57, 60, 255},
 	}
 
-	boardComp := sdl.NewBoardComponent(initState.Board, palette, 800, 600)
+	boardComp := sdl.NewBoardComponent(initState.Board, palette, *x, *y)
 
 	disMgr.Add(boardComp)
-	disMgr.AddSurf(sdl.MakeGrid(800, 600))
+	disMgr.AddSurf(sdl.MakeGrid(*x, *y))
 
 	snaps := make(chan lib.GameSnapshot)
 
