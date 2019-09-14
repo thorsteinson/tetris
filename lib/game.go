@@ -378,12 +378,13 @@ func (ctl *BoardController) Tick(move Movement, next *Tetromino) (int, bool) {
 
 type Game struct {
 	// Keeps track of number of lines that have been cleared
-	lines      int
-	score      int
-	ticks      int
-	controller *BoardController
-	nextTet    *Tetromino
-	tetSource  chan *Tetromino
+	lines         int
+	score         int
+	ticks         int
+	startingLevel int
+	controller    *BoardController
+	nextTet       *Tetromino
+	tetSource     chan *Tetromino
 }
 
 func TetFactory(seed int64) chan *Tetromino {
@@ -404,7 +405,7 @@ const DURATION_DIFF = 50 * time.Millisecond
 
 // Create a new game with a given random seed, and hook it to some
 // sort of movement channel to get inputs
-func NewGame(seed int64) *Game {
+func NewGame(seed int64, level int) *Game {
 	var next *Tetromino
 
 	tets := TetFactory(seed)
@@ -412,16 +413,17 @@ func NewGame(seed int64) *Game {
 	next = <-tets
 
 	game := &Game{
-		controller: NewBoardController(&Board{}, firstTet),
-		nextTet:    next,
-		tetSource:  tets,
+		controller:    NewBoardController(&Board{}, firstTet),
+		nextTet:       next,
+		tetSource:     tets,
+		startingLevel: level,
 	}
 
 	return game
 }
 
 func (game *Game) Level() int {
-	var lvl = (game.lines / LINES_PER_LVL) + 1
+	var lvl = (game.lines / LINES_PER_LVL) + game.startingLevel
 	if lvl > MAX_LEVEL {
 		return MAX_LEVEL
 	}

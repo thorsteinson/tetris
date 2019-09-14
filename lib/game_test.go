@@ -520,7 +520,7 @@ func TestBoardForceTick(t *testing.T) {
 }
 
 func TestGameClearLines(t *testing.T) {
-	game := NewGame(0)
+	game := NewGame(0, 1)
 
 	if game.Level() != 1 {
 		t.Error("Default level is incorrect")
@@ -540,7 +540,7 @@ func TestGameClearLines(t *testing.T) {
 }
 
 func TestNextTet(t *testing.T) {
-	game := NewGame(0)
+	game := NewGame(0, 1)
 
 	tet := game.nextTet
 
@@ -557,7 +557,7 @@ func TestNextTet(t *testing.T) {
 
 // Simulates a game where the user does absolutely nothing at all
 func TestGameSimNothing(t *testing.T) {
-	game := NewGame(0)
+	game := NewGame(0, 1)
 
 	for !game.controller.isGameover {
 		game.Tick(MOVE_FORCE_DOWN)
@@ -566,7 +566,7 @@ func TestGameSimNothing(t *testing.T) {
 
 // Simulates a game with totally random movements
 func TestGameRandom(t *testing.T) {
-	game := NewGame(0)
+	game := NewGame(0, 1)
 
 	var move Movement
 	for !game.controller.isGameover {
@@ -587,7 +587,7 @@ func TestGameRandom(t *testing.T) {
 }
 
 func TestGameListen(t *testing.T) {
-	game := NewGame(0)
+	game := NewGame(0, 1)
 
 	// A channel that only sends slams, so we finish our game quickly
 	slamChan := make(chan Movement)

@@ -12,6 +12,7 @@ import (
 
 func main() {
 	debug := flag.Bool("debug", false, "Disable timer and allow free movement")
+	level := flag.Int("level", 1, "Starting level (1-20)")
 	flag.Parse()
 
 	if *debug {
@@ -20,7 +21,7 @@ func main() {
 
 	evtMgr, disMgr := sdl.Init(*debug)
 
-	game := lib.NewGame(time.Now().UnixNano())
+	game := lib.NewGame(time.Now().UnixNano(), *level)
 	initState := game.Snap()
 
 	palette := [7]color.RGBA{
